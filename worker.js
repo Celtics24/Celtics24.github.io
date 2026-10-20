@@ -2,6 +2,10 @@
 // Routes:  POST /subscribe  {subscription}
 //          POST /unsubscribe {endpoint}
 //          POST /studied {endpoint, day}
+//          POST /sync/create {} -> {code}   (cross-device sync)
+//          POST /sync/pull   {code}
+//          POST /sync/push   {code, studied, days}  (server-side merge)
+//          POST /sync/destroy {code}
 // Cron:    runs several times a day; sends exam reminders and streak nudges (Israel time).
 // Secrets/vars (set in Cloudflare dashboard, NEVER in the repo):
 //   VAPID_PRIVATE_JWK (secret) - VAPID private key as JWK JSON
@@ -210,6 +214,51 @@ async function runReminders(env) {
   } while (cursor);
 }
 
+// ---------- Cross-device sync (same KV namespace, "sync:" keys) ----------
+// The 8-character code is the only credential: it pairs her devices. The KV key
+// is a SHA-256 hash of the code, so a KV listing does not reveal codes.
+const SYNC_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no easily-confused chars
+function generateSyncCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  let code = '';
+  for (const b of bytes) code += SYNC_CODE_ALPHABET[b % 32];
+  return code;
+}
+async function syncKey(code) {
+  const digest = await crypto.subtle.digest('SHA-256', te.encode(String(code).toUpperCase().trim()));
+  return `sync:${bytesToB64u(digest)}`;
+}
+function normalizeStudied(studied, fallbackTs) {
+  const out = {};
+  if (studied && typeof studied === 'object') {
+    for (const [id, val] of Object.entries(studied)) {
+      if (!id || id.length > 120) continue;
+      if (val === true) out[id] = { on: true, ts: fallbackTs }; // legacy shape
+      else if (val && typeof val === 'object' && typeof val.on === 'boolean' && typeof val.ts === 'string') out[id] = { on: val.on, ts: val.ts };
+    }
+  }
+  return out;
+}
+function normalizeDays(days) {
+  const out = {};
+  if (days && typeof days === 'object') {
+    for (const [day, val] of Object.entries(days)) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(day) && val) out[day] = true;
+    }
+  }
+  return out;
+}
+// Conflict handling: study days are a union (the streak is computed from the
+// days, so the union keeps the longest streak). Per summary the latest
+// timestamp wins, so an unmark on one device beats an older mark on another.
+function mergeSyncState(a, b) {
+  const studied = { ...a.studied };
+  for (const [id, entry] of Object.entries(b.studied)) {
+    if (!studied[id] || entry.ts >= studied[id].ts) studied[id] = entry;
+  }
+  return { studied, days: { ...a.days, ...b.days } };
+}
+
 // ---------- HTTP API ----------
 function cors(env) {
   return {
@@ -254,6 +303,54 @@ export default {
       const existing = (await env.SUBS.get(`sub:${hash}`, 'json')) || {};
       await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, lastStudied: day, streakDays: streakDays || 0 }));
       return jsonResponse({ ok: true }, 200, env);
+    }
+
+    if (url.pathname.startsWith('/sync/')) {
+      if (request.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405, env);
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonResponse({ error: 'bad json' }, 400, env); }
+
+      if (url.pathname === '/sync/create') {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const code = generateSyncCode();
+          const key = await syncKey(code);
+          if ((await env.SUBS.get(key)) !== null) continue; // collision, draw again
+          const now = new Date().toISOString();
+          await env.SUBS.put(key, JSON.stringify({ v: 1, updated: now, studied: {}, days: {} }));
+          return jsonResponse({ ok: true, code }, 200, env);
+        }
+        return jsonResponse({ error: 'try again' }, 500, env);
+      }
+
+      const code = typeof body.code === 'string' ? body.code.trim() : '';
+      if (!/^[A-Za-z2-9]{8}$/.test(code)) return jsonResponse({ error: 'bad code' }, 400, env);
+      const key = await syncKey(code);
+
+      if (url.pathname === '/sync/pull') {
+        const record = await env.SUBS.get(key, 'json');
+        if (!record) return jsonResponse({ error: 'unknown code' }, 404, env);
+        return jsonResponse({ ok: true, record }, 200, env);
+      }
+
+      if (url.pathname === '/sync/push') {
+        const existing = await env.SUBS.get(key, 'json');
+        if (!existing) return jsonResponse({ error: 'unknown code' }, 404, env);
+        const now = new Date().toISOString();
+        const merged = mergeSyncState(
+          { studied: normalizeStudied(existing.studied, now), days: normalizeDays(existing.days) },
+          { studied: normalizeStudied(body.studied, now), days: normalizeDays(body.days) },
+        );
+        const record = { v: (existing.v || 0) + 1, updated: now, ...merged };
+        await env.SUBS.put(key, JSON.stringify(record));
+        return jsonResponse({ ok: true, record }, 200, env);
+      }
+
+      if (url.pathname === '/sync/destroy') {
+        await env.SUBS.delete(key);
+        return jsonResponse({ ok: true }, 200, env);
+      }
+
+      return jsonResponse({ error: 'not found' }, 404, env);
     }
 
     return jsonResponse({ error: 'not found' }, 404, env);
