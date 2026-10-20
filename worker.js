@@ -6,13 +6,17 @@
 //          POST /sync/pull   {code}
 //          POST /sync/push   {code, studied, days}  (server-side merge)
 //          POST /sync/destroy {code}
+//          POST /content/get {code}  -> her content (subjects, exams, summaries)
+//          POST /content/put {code, content}
+//          POST /admin/users|get|put {token,...}  (Instinct only; ADMIN_TOKEN secret)
 // Cron:    runs several times a day; sends exam reminders and streak nudges (Israel time).
 // Secrets/vars (set in Cloudflare dashboard, NEVER in the repo):
 //   VAPID_PRIVATE_JWK (secret) - VAPID private key as JWK JSON
 //   VAPID_PUBLIC_KEY  (var)    - VAPID public key, base64url
 //   VAPID_SUBJECT     (var)    - e.g. mailto:y0546367987@gmail.com
 //   SITE_ORIGIN       (var)    - https://celtics24.github.io
-//   SUBS              (KV binding) - stores subscriptions + study days
+//   ADMIN_TOKEN       (secret) - lets Instinct seed/update content; NEVER in the repo
+//   SUBS              (KV binding) - stores subscriptions + study days + per-user content
 
 const EXAMS_URL = 'https://celtics24.github.io/exams.json';
 
@@ -180,11 +184,15 @@ async function runReminders(env) {
   const { day, hour } = israelNow();
   if (![7, 18, 20].includes(hour)) return; // cron covers extra hours for DST; act only on IL hours
 
-  let exams = [];
-  try {
-    const res = await fetch(EXAMS_URL, { cf: { cacheTtl: 300 } });
-    if (res.ok) exams = await res.json();
-  } catch (e) { /* no exams data, streak nudges still work */ }
+  // Exams come from per-user content in KV; exams.json is only the fallback
+  // while no user has content yet (and until it is removed from the repo).
+  let exams = await loadContentExams(env);
+  if (!exams.length) {
+    try {
+      const res = await fetch(EXAMS_URL, { cf: { cacheTtl: 300 } });
+      if (res.ok) exams = await res.json();
+    } catch (e) { /* no exams data, streak nudges still work */ }
+  }
   const examDay = e => e.date;
   const todayExams = exams.filter(e => examDay(e) === day);
   const tomorrowExams = exams.filter(e => examDay(e) === shiftDay(day, 1));
@@ -259,6 +267,64 @@ function mergeSyncState(a, b) {
   return { studied, days: { ...a.days, ...b.days } };
 }
 
+
+// ---------- Per-user content (subjects, exams, summaries) ----------
+// Stored in the same KV as content:<hash of sync code>. The sync code stays the
+// user's credential; Instinct updates content with the ADMIN_TOKEN secret.
+const CONTENT_MAX_BYTES = 200000;
+const pad2 = n => String(n).padStart(2, '0');
+async function loadContentExams(env) {
+  const out = [];
+  const seen = new Set();
+  let cursor;
+  do {
+    const page = await env.SUBS.list({ prefix: 'content:', cursor });
+    for (const key of page.keys) {
+      const rec = await env.SUBS.get(key.name, 'json');
+      const list = rec && rec.content && Array.isArray(rec.content.exams) ? rec.content.exams : [];
+      for (const e of list) {
+        if (!e || !e.y || !e.m || !e.d) continue;
+        const date = `${e.y}-${pad2(e.m)}-${pad2(e.d)}`;
+        const id = `${date}|${e.name}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        out.push({ date, name: e.name, subject: e.subject, time: e.time });
+      }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  return out;
+}
+function validContent(c) {
+  if (!c || typeof c !== 'object') return false;
+  for (const k of ['subjects', 'exams', 'summaries']) if (!Array.isArray(c[k])) return false;
+  return JSON.stringify(c).length <= CONTENT_MAX_BYTES;
+}
+async function saveContent(env, hash, content) {
+  const existing = await env.SUBS.get(`content:${hash}`, 'json');
+  const rec = { v: ((existing && existing.v) || 0) + 1, updated: new Date().toISOString(), content };
+  await env.SUBS.put(`content:${hash}`, JSON.stringify(rec));
+  return rec;
+}
+async function adminAuthorized(env, token) {
+  if (!env.ADMIN_TOKEN || typeof token !== 'string' || token.length < 20) return false;
+  const a = new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(token)));
+  const b = new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(env.ADMIN_TOKEN)));
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+async function listSyncHashes(env) {
+  const hashes = [];
+  let cursor;
+  do {
+    const page = await env.SUBS.list({ prefix: 'sync:', cursor });
+    for (const k of page.keys) hashes.push(k.name.slice(5));
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  return hashes;
+}
+
 // ---------- HTTP API ----------
 function cors(env) {
   return {
@@ -305,6 +371,54 @@ export default {
       return jsonResponse({ ok: true }, 200, env);
     }
 
+    if (url.pathname.startsWith('/content/') || url.pathname.startsWith('/admin/')) {
+      if (request.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405, env);
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonResponse({ error: 'bad json' }, 400, env); }
+
+      if (url.pathname.startsWith('/content/')) {
+        const code = typeof body.code === 'string' ? body.code.trim() : '';
+        if (!/^[A-Za-z2-9]{8}$/.test(code)) return jsonResponse({ error: 'bad code' }, 400, env);
+        const hash = (await syncKey(code)).slice(5);
+        if ((await env.SUBS.get(`sync:${hash}`)) === null) return jsonResponse({ error: 'unknown code' }, 404, env);
+        if (url.pathname === '/content/get') {
+          const rec = await env.SUBS.get(`content:${hash}`, 'json');
+          if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
+          return jsonResponse({ ok: true, v: rec.v, content: rec.content }, 200, env);
+        }
+        if (url.pathname === '/content/put') {
+          if (!validContent(body.content)) return jsonResponse({ error: 'bad content' }, 400, env);
+          const rec = await saveContent(env, hash, body.content);
+          return jsonResponse({ ok: true, v: rec.v }, 200, env);
+        }
+        return jsonResponse({ error: 'not found' }, 404, env);
+      }
+
+      // admin (Instinct): token-protected; "user" is the first 10 chars of the hash, optional if only one user exists
+      if (!(await adminAuthorized(env, body.token))) return jsonResponse({ error: 'forbidden' }, 403, env);
+      const hashes = await listSyncHashes(env);
+      if (url.pathname === '/admin/users') {
+        const users = [];
+        for (const h of hashes) users.push({ user: h.slice(0, 10), hasContent: (await env.SUBS.get(`content:${h}`)) !== null });
+        return jsonResponse({ ok: true, users }, 200, env);
+      }
+      let hash;
+      if (body.user) hash = hashes.find(h => h.startsWith(String(body.user)));
+      else if (hashes.length === 1) hash = hashes[0];
+      if (!hash) return jsonResponse({ error: 'user not found or ambiguous' }, 404, env);
+      if (url.pathname === '/admin/get') {
+        const rec = await env.SUBS.get(`content:${hash}`, 'json');
+        if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
+        return jsonResponse({ ok: true, v: rec.v, content: rec.content }, 200, env);
+      }
+      if (url.pathname === '/admin/put') {
+        if (!validContent(body.content)) return jsonResponse({ error: 'bad content' }, 400, env);
+        const rec = await saveContent(env, hash, body.content);
+        return jsonResponse({ ok: true, v: rec.v }, 200, env);
+      }
+      return jsonResponse({ error: 'not found' }, 404, env);
+    }
+
     if (url.pathname.startsWith('/sync/')) {
       if (request.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405, env);
       let body;
@@ -347,6 +461,7 @@ export default {
 
       if (url.pathname === '/sync/destroy') {
         await env.SUBS.delete(key);
+        await env.SUBS.delete(`content:${key.slice(5)}`); // her content goes with the pairing
         return jsonResponse({ ok: true }, 200, env);
       }
 
