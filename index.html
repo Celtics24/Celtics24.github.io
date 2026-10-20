@@ -147,6 +147,15 @@ body{
 .reminders-btn:disabled{opacity:.6}
 .streak-hint{margin-inline-start:auto;font-size:11px;color:#c49bae;text-align:left}
 .hero-gap{margin-top:14px}
+
+[hidden]{display:none!important}
+:root[data-theme="blue"]{--ds-page:#f6faff;--ds-ink:#182d49;--ds-ink-2:#49617e;--pink-50:#f0f7ff;--pink-100:#e0efff;--pink-200:#bedbff;--pink-300:#8dbbfa;--pink-600:#377dc7;--pink-700:#235b96}
+:root[data-theme="blue"] .sync-card{background:linear-gradient(135deg,#edf4ff,#dcecff);border-color:#bedbff}
+:root[data-theme="blue"] .reminders-card:not(.sync-card){background:#eef6ff;border-color:#bedbff}
+:root[data-theme="blue"] .reminders-sub{color:#49617e}
+:root[data-theme="blue"] .hero-wrap{box-shadow:0 6px 20px rgb(35 91 150 / .10)}
+.theme-options{display:flex;gap:12px}.theme-option{min-height:48px;border:2px solid transparent;border-radius:16px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer}.theme-option[aria-pressed="true"]{outline:2px solid var(--pink-700);outline-offset:3px}
+.onboard{display:flex;flex-direction:column;gap:18px;padding-top:22px}.onboard h1{margin:0}.onboard input,.onboard textarea,.timetable-editor{width:100%;font:inherit;min-height:48px;border:1.5px solid var(--pink-200);border-radius:14px;padding:12px;background:#fff;color:var(--ds-ink)}.onboard textarea{min-height:130px;resize:vertical}.onboard label{font-size:14px;font-weight:600;display:grid;gap:8px}.onboard .file-button{min-height:48px;text-align:center}.form-error{color:#b22636;font-size:13px}.timetable-editor{min-height:120px;margin:10px 0;white-space:pre-wrap}.save-state{font-size:12px;color:var(--ds-ink-2);min-height:16px}
 </style>
 </head>
 <body>
@@ -253,7 +262,7 @@ const store={
 function markStudyDay(){const d=store.days;d[todayKey()]=true;store.days=d;
   if(window.syncLocalChanged)window.syncLocalChanged();
   if(window.reportStudyDay){const {current}=computeStreaks(d);window.reportStudyDay(todayKey(),current);}}
-function esc(s){return s;}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function streakHtml(){
   const {current,best}=computeStreaks(store.days);
   return `<div class="streak-card"><span class="streak-flame" aria-hidden="true">🔥</span><span class="streak-num">${current}</span><span class="streak-text"><span class="streak-label">${current===1?'יום רצף':'ימי רצף'}</span><span class="streak-best">השיא שלך: ${best}</span></span><span class="streak-hint">יום נספר עם ״למדתי״</span></div>`;
@@ -355,6 +364,7 @@ function searchResultsHtml(q){
 function settingsHtml(){
   return `
   <header class="file-header"><h1 class="file-title">הגדרות ⚙️</h1></header>
+  <section class="group"><h2 class="group-label">צבע האפליקציה</h2><div id="theme-picker"></div></section><section class="group"><h2 class="group-label">מערכת השעות</h2><div id="timetable-settings"></div></section>
   <section class="group"><h2 class="group-label">חיבור בין מכשירים</h2><div id="sync-card"></div></section>
   <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>`;
 }
@@ -384,14 +394,14 @@ function homeBelowHtml(q){
   if(q&&q.trim().length>0)return searchResultsHtml(q);
   return `
   <section class="group"><h2 class="group-label">המקצועות שלי</h2><div class="subjects">${subjects.map(subjectTileHtml).join('')}</div>
-    <div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${ROOT}" target="_blank" rel="noreferrer">פתחי את כל התיקייה בדרייב</a></div></section>
+    ${window.userHasDriveRoot?`<div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${ROOT}" target="_blank" rel="noreferrer">פתחי את כל התיקייה בדרייב</a></div>`:''}</section>
   <section class="group"><h2 class="group-label">הסיכומים שלי</h2>${summaryListHtml(summaries)}</section>
-  <section class="group"><h2 class="group-label">מועצת תלמידים 🎤</h2>
+  ${councilItems.length?`<section class="group"><h2 class="group-label">מועצת תלמידים 🎤</h2>
     <div class="summaries">${councilItems.map(item=>`
       <div class="summary-row"><span class="summary-top"><span class="summary-chip" style="background:${item.color.bg};border-color:${item.color.border}">${item.emoji}</span>
       <span class="summary-body"><a class="summary-name file-hover-wrap" href="${item.url}" target="_blank" rel="noreferrer"><span class="file-hover-underline">${item.name}</span></a>
       <span class="summary-note">${item.note}</span></span></span></div>`).join('')}</div>
-    <div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${folder(COUNCIL_ID)}" target="_blank" rel="noreferrer">פתחי את תיקיית המועצה בדרייב</a></div></section>`;
+    <div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${folder(COUNCIL_ID)}" target="_blank" rel="noreferrer">פתחי את תיקיית המועצה בדרייב</a></div></section>`:''}`;
 }
 function subjectPageHtml(subj){
   const list=subjectSummaries(subj.name);
@@ -406,7 +416,7 @@ function subjectPageHtml(subj){
     <span class="subj-exam-meta">${examWeekday(exam)}, ${exam.d} ב${hebMonths[exam.m-1]}${exam.far?` ${exam.y}`:''}${exam.time?` · ${exam.time}`:''} · ${countdown(exam)}</span></div>`:''}
   ${list.length?`<section class="group"><h2 class="group-label">ההתקדמות שלי</h2>${progressHtml(done,list.length,subj.color)}</section>`:''}
   ${list.length?`<section class="group"><h2 class="group-label">הסיכומים</h2>${summaryListHtml(list)}</section>`:''}
-  <div style="margin-top:14px"><a class="file-button" data-variant="secondary" href="${folder(subj.id)}" target="_blank" rel="noreferrer">פתחי את התיקייה בדרייב</a></div>`;
+  ${subj.id?`<div style="margin-top:14px"><a class="file-button" data-variant="secondary" href="${folder(subj.id)}" target="_blank" rel="noreferrer">פתחי את התיקייה בדרייב</a></div>`:''}`;
 }
 const app=document.getElementById('app');
 let homeQuery='';
@@ -414,8 +424,10 @@ function setTab(name){
   document.querySelectorAll('#tabs .tab').forEach(t=>{const on=t.getAttribute('data-tab')===name;t.classList.toggle('is-active',on);if(on)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current');});
 }
 function render(){
+  if(!window.userContentReady){app.innerHTML=window.onboardingHtml?window.onboardingHtml():'<h1 class="file-title">Study Coach 🎀</h1>';document.getElementById("tabs").hidden=true;if(window.bindOnboarding)window.bindOnboarding();return;}
+  document.getElementById("tabs").hidden=false;
   const hash=location.hash||'#/';
-  const m=hash.match(/^#\/subject\/([a-z]+)$/);
+  const m=hash.match(/^#\/subject\/([a-z0-9]+)$/);
   const closing=`<div class="closing">הדף עודכן ב-20.10.2026</div>`;
   if(hash==='#/settings'){
     setTab('settings');
@@ -444,6 +456,7 @@ function render(){
   window.scrollTo(0,0);
   if(window.renderRemindersCard)window.renderRemindersCard();
   if(window.renderSyncCard)window.renderSyncCard();
+  if(window.renderPreferences)window.renderPreferences();
 }
 function bindToggles(root){
   root.querySelectorAll('[data-toggle]').forEach(btn=>{
@@ -463,8 +476,8 @@ function bindToggles(root){
 window.addEventListener('hashchange',render);
 render();
 </script>
-<script src="sync.js?v=20261020"></script>
-<script src="content.js?v=20261020"></script>
-<script src="push.js"></script>
+<script src="sync.js?v=20261020b"></script>
+<script src="content.js?v=20261020b"></script>
+<script src="push.js?v=20261020b"></script>
 </body>
 </html>
