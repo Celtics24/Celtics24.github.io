@@ -143,7 +143,7 @@ function renderSyncCard(force) {
   if (!el) return;
   const code = syncCode();
   const state = code ? `linked:${code}` : (renderSyncCard.joinMode ? `join:${renderSyncCard.error || ''}` : 'idle');
-  if (!force && state === syncCardState) return;
+  if (!force && state === syncCardState && el.childElementCount > 0) return; // render() rebuilds the DOM - an empty card must be refilled
   syncCardState = state;
 
   if (code) {
