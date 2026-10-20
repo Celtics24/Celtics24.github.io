@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Study Coach</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Study Coach">
+<meta name="theme-color" content="#ffe3ef">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<style>
+:root{
+  --ds-page:#fbfaf9; --ds-white:#ffffff; --ds-ink:#251f21; --ds-ink-2:#585254;
+  --ds-ink-3:#969394; --ds-hairline:#eae9ea;
+  --pink-50:#fff5fa; --pink-100:#ffe3ef; --pink-200:#ffc9de; --pink-300:#ff9ec4; --pink-600:#d6336c; --pink-700:#c2255c;
+  --ds-elevation-1: 0 1px 2px rgb(37 31 33 / .12), 0 4px 12px rgb(37 31 33 / .14);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  background:var(--ds-page); color:var(--ds-ink);
+  font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans Hebrew",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.file-card{
+  max-width:680px;margin:24px auto;padding:22px 20px 28px;background:var(--ds-white);
+  border-radius:24px;box-shadow:var(--ds-elevation-1);
+}
+@media (max-width:740px){ .file-card{margin:0;border-radius:0;min-height:100vh;} }
+.file-header{margin-bottom:14px}
+.file-title{margin:0;font-size:28px;font-weight:800}
+.file-fact{margin-top:2px;font-size:13px;color:var(--ds-ink-2)}
+.group{margin-top:20px}
+.group-label{margin:0 0 8px;font-size:13px;font-weight:700;color:var(--ds-ink-2)}
+.caption{font-size:12px;color:var(--ds-ink-2);margin-top:8px}
+.closing{margin-top:26px;text-align:center;font-size:12px;color:var(--ds-ink-3)}
+.file-button{display:inline-block;font:inherit;font-size:13px;font-weight:700;padding:9px 16px;border-radius:999px;
+  border:1.5px solid var(--pink-300);background:var(--pink-100);color:var(--pink-700);cursor:pointer;text-decoration:none}
+.file-button[data-variant="secondary"]{background:#fff}
+.file-button:hover{border-color:var(--pink-600)}
+.file-hover-wrap{text-decoration:none}
+.file-hover-underline:hover{text-decoration:underline}
+.next-exam{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:20px;border-radius:22px;
+  background:linear-gradient(135deg,var(--pink-100),var(--pink-200));border:1px solid var(--pink-300);margin-bottom:6px}
+.next-label{font-size:13px;font-weight:700;color:var(--pink-700)}
+.next-count-row{display:flex;align-items:baseline;gap:8px}
+.next-num{font-size:52px;font-weight:800;line-height:1;color:var(--pink-700);font-variant-numeric:tabular-nums}
+.next-word{font-size:20px;font-weight:700;color:var(--pink-700)}
+.next-word.is-big{font-size:40px;font-weight:800;line-height:1.05}
+.next-name{font-size:16px;font-weight:600;color:var(--ds-ink)}
+.next-date{font-size:13px;color:var(--ds-ink-2)}
+.next-link{margin-top:4px}
+.search{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--pink-200);border-radius:999px;padding:11px 16px;margin:14px 0 4px}
+.search:focus-within{border-color:var(--pink-300)}
+.search input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:15px;background:transparent;color:var(--ds-ink)}
+.search input::placeholder{color:var(--ds-ink-2)}
+.no-results{font-size:14px;color:var(--ds-ink-2);text-align:center;padding:18px 0}
+.pbar-wrap{display:flex;flex-direction:column;gap:6px;width:100%}
+.pbar{height:10px;border-radius:999px;background:#fff;border:1px solid var(--pink-200);overflow:hidden}
+.pbar>span{display:block;height:100%;background:var(--pink-600);border-radius:999px;transition:width .3s ease}
+.pbar-text{font-size:12px;font-weight:600;color:var(--ds-ink-2)}
+.sprint{display:flex;flex-direction:column;gap:10px}
+.sprint-card{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:16px;border:1px solid transparent;text-decoration:none;color:inherit}
+.sprint-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sprint-name{font-weight:700;font-size:14px;color:var(--ds-ink)}
+.sprint-days{font-size:12px;font-weight:700;white-space:nowrap}
+.exams{display:flex;flex-direction:column}
+.exam-row{display:block;padding:12px 0;border-bottom:1px solid var(--ds-hairline);text-decoration:none;color:inherit}
+.exam-row:last-child{border-bottom:0}
+.exam-flex{display:flex;align-items:center;gap:14px}
+.exam-date{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;padding:6px 8px;background:var(--pink-100);border-radius:14px;color:var(--pink-700)}
+.exam-date strong{font-size:20px;line-height:1.1}
+.exam-date span{font-size:11px}
+.exam-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.exam-name{font-weight:600;font-size:14px;color:var(--ds-ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.exam-pill{font-size:10px;font-weight:700;background:var(--pink-100);color:var(--pink-700);border-radius:999px;padding:2px 8px}
+.exam-meta{font-size:12px;color:var(--ds-ink-2)}
+.exam-count{font-size:13px;font-weight:600;color:var(--pink-700);white-space:nowrap}
+.month{border:1px solid var(--pink-200);border-radius:16px;overflow:hidden;background:#fff}
+.month-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--pink-100);color:var(--pink-700);font-size:12px;font-weight:600;text-align:center}
+.month-head>div{padding:8px 0}
+.month-week{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--ds-hairline)}
+.month-day{min-height:52px;padding:4px 2px;text-align:center;border-inline-start:1px solid var(--ds-hairline);display:flex;flex-direction:column;align-items:center;gap:2px}
+.month-day:first-child{border-inline-start:0}
+.month-num{font-size:12px;font-weight:600;color:var(--ds-ink)}
+.month-day.has-exam{background:var(--pink-50)}
+.month-day.has-exam .month-num{color:var(--pink-700)}
+.month-exam{font-size:9px;line-height:1.2;background:var(--pink-200);color:var(--pink-700);border-radius:6px;padding:1px 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.month-day.is-today{outline:2px solid var(--pink-300);outline-offset:-2px;border-radius:8px}
+.summaries{display:flex;flex-direction:column;gap:10px}
+.summary-row{display:flex;flex-direction:column;gap:10px;padding:12px 14px;background:#fff;border:1px solid var(--ds-hairline);border-radius:16px}
+.summary-top{display:flex;align-items:center;gap:12px}
+.summary-chip{display:flex;align-items:center;justify-content:center;min-width:40px;height:40px;border-radius:12px;border:1px solid transparent;font-size:20px}
+.summary-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.summary-name{font-weight:600;font-size:14px;color:var(--ds-ink);text-decoration:none;align-self:flex-start}
+.summary-row.is-studied .summary-name{color:var(--ds-ink-2)}
+.summary-note{font-size:12px;color:var(--ds-ink-2)}
+.summary-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.studied-toggle{flex-shrink:0;font:inherit;font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;border:1.5px solid var(--pink-300);background:#fff;color:var(--pink-700);cursor:pointer;margin-inline-start:auto}
+.studied-toggle.is-on{color:#fff;border-width:1.5px}
+.subjects{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:768px){.subjects{grid-template-columns:repeat(4,1fr)}}
+.subject{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;background:var(--pink-50);border:1px solid var(--pink-200);border-radius:16px;text-decoration:none;color:inherit}
+.subject-emoji{font-size:22px}
+.subject-name{font-weight:600;font-size:14px;color:var(--ds-ink)}
+.subject-count{font-size:12px;color:var(--ds-ink-2)}
+.back-link{align-self:flex-start;margin-bottom:12px}
+.subject-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.subject-head-emoji{font-size:34px}
+.subject-head-name{font-size:26px;font-weight:800;color:var(--ds-ink)}
+.subj-exam{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:16px;border:1px solid transparent;margin-bottom:14px}
+.subj-exam-name{font-weight:700;font-size:15px;color:var(--ds-ink)}
+.subj-exam-meta{font-size:13px;color:var(--ds-ink-2)}
+.hero-wrap{max-width:460px;margin:0 auto;border-radius:24px;overflow:hidden;border:1.5px solid var(--pink-200);background:#f0ebef;box-shadow:0 6px 20px rgb(214 51 108 / .10)}
+.hero-wrap img{display:block;width:100%;height:auto}
+.streak-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--pink-50),var(--pink-100));border:1.5px solid var(--pink-200);border-radius:22px;padding:14px 18px;margin-top:14px}
+@keyframes streak-pop{0%{transform:scale(.35);opacity:.2}60%{transform:scale(1.22);opacity:1}100%{transform:scale(1)}}
+.streak-flame{font-size:30px;animation:streak-pop .6s ease}
+.streak-num{font-size:34px;font-weight:800;color:var(--pink-700);min-width:42px;text-align:center;animation:streak-pop .5s ease}
+.streak-text{display:flex;flex-direction:column;gap:2px}
+.streak-label{font-weight:700}
+.streak-best{font-size:12.5px;color:var(--pink-600)}
+.streak-hint{margin-inline-start:auto;font-size:11px;color:#c49bae;text-align:left}
+.hero-gap{margin-top:14px}
+</style>
+</head>
+<body>
+<div class="file-card"><div id="app" class="hub"></div></div>
+<script>
+"use strict";
+const ROOT='https://drive.google.com/drive/folders/1nc5ecwjdBMH6XlX2gfK3xN_Ta7Kt7One';
+const folder=id=>`https://drive.google.com/drive/folders/${id}`;
+const COUNCIL_ID='1q_XzfOP3iGDkiZHhQNq11ibFx8TI7Pp8';
+const SOCIO_DOC='https://docs.google.com/document/d/1DPaHkvwYI6f_52n1LXPtmdOrFM4MSsZsgAL39rMk9AI/edit';
+const PROGRESS_DAYS=3;
+const C={
+  pink:{bg:'#ffe3ef',border:'#ffc9de',accent:'#c2255c'},
+  lavender:{bg:'#f3edff',border:'#ddd0fa',accent:'#6d4fb0'},
+  mint:{bg:'#e6f7ef',border:'#c9ecdd',accent:'#2f8f5b'},
+  sky:{bg:'#e8f3ff',border:'#cde5fb',accent:'#2b6cb0'},
+  peach:{bg:'#fff0e4',border:'#fbdfc6',accent:'#b85c17'},
+  lemon:{bg:'#fff8dd',border:'#f3e7b4',accent:'#7a6116'},
+  sand:{bg:'#faf3e7',border:'#ecdfc6',accent:'#8a6d3b'},
+  clay:{bg:'#fbeaea',border:'#f1d3d3',accent:'#a34a4a'},
+  teal:{bg:'#e5f6f9',border:'#c6e9f1',accent:'#1f7a8c'},
+  rose:{bg:'#ffe9ee',border:'#f7cbd5',accent:'#c94f6d'},
+  orange:{bg:'#ffefe2',border:'#fadbc2',accent:'#b35c1e'},
+  green:{bg:'#ebf7e4',border:'#d3eac3',accent:'#4a7c2f'},
+  peri:{bg:'#eef0ff',border:'#d8dcfb',accent:'#5a67b8'},
+};
+const subjects=[
+  {key:'psych',name:'פסיכולוגיה',emoji:'🧠',id:'1on8BT_etZSULeHtmoFyOKaUyjWDKD3Ny',color:C.lavender},
+  {key:'socio',name:'סוציולוגיה',emoji:'👥',id:'1FajQZKCv_d-ZleSC1J5dNB8mZAlZTwNI',color:C.mint},
+  {key:'math',name:'מתמטיקה',emoji:'📐',id:'1hSjw-4IQQNIwO3m8ArFUHLxW_gqRIRnF',color:C.sky},
+  {key:'english',name:'אנגלית',emoji:'🔤',id:'1Jp6bozaXNZVJKm77linIRQ85_KKxq8E3',color:C.peach},
+  {key:'lashon',name:'לשון',emoji:'✍️',id:'1Sy5YPSGpTzeh21Mxye_1GIbvzVm2ufEz',color:C.lemon},
+  {key:'tanach',name:'תנ״ך',emoji:'📖',id:'1HNOCqQsjJ-RJNUc0TtoSjXRr3MX-R8jf',color:C.sand},
+  {key:'history',name:'היסטוריה',emoji:'🏛️',id:'1jCNjM87TcqQlSnilBesehXSv5l1k2ws8',color:C.clay},
+  {key:'civics',name:'אזרחות',emoji:'⚖️',id:'1Y8FnLDW5h473m8hCPQZd7xr6Hbx-x6LW',color:C.teal},
+  {key:'physio',name:'פיזיולוגיה',emoji:'🫀',id:'1qAJqaG5A-9Cv_1GlJmq_I2xkXzguH704',color:C.rose},
+  {key:'gym',name:'חינוך גופני',emoji:'🏀',id:'1S9RHO4VYng5fkLVUZqGMnDcqHO-dEOHA',color:C.orange},
+  {key:'sport',name:'ספורט',emoji:'🏅',id:'1SJUuN-VnFmuYixbNQgjM5dDojFXr01Y1',color:C.green},
+  {key:'edu',name:'חינוך וחברה',emoji:'🌱',id:'1jjvNIXWI3xerbzs1jryBItML6Jl5xYf_',color:C.green},
+  {key:'dialog',name:'דיאלוג',emoji:'💬',id:'1bxGJBD4Q74R5nTaAgvXEK2vXlcOpzpIg',color:C.peri},
+];
+const exams=[
+  {y:2026,m:11,d:9,name:'מבחן אנגלית',time:'08:00',url:folder('1Jp6bozaXNZVJKm77linIRQ85_KKxq8E3'),color:C.peach,subject:'אנגלית'},
+  {y:2026,m:11,d:17,name:'מבחן פסיכולוגיה',url:folder('1on8BT_etZSULeHtmoFyOKaUyjWDKD3Ny'),color:C.lavender,subject:'פסיכולוגיה'},
+  {y:2026,m:11,d:17,name:'מבחן מגמות אשכול א׳'},
+  {y:2026,m:11,d:19,name:'מבחן מגמות אשכול ב׳',detail:'כולל סוציולוגיה',url:SOCIO_DOC,hasSummary:true,color:C.mint,subject:'סוציולוגיה'},
+  {y:2026,m:11,d:22,name:'מבחן היסטוריה',url:folder('1jCNjM87TcqQlSnilBesehXSv5l1k2ws8'),color:C.clay,subject:'היסטוריה'},
+  {y:2026,m:11,d:26,name:'מבחן טרום מתכונת לשון',url:folder('1Sy5YPSGpTzeh21Mxye_1GIbvzVm2ufEz'),color:C.lemon,subject:'לשון'},
+  {y:2026,m:11,d:30,name:'מבחן תנ״ך',url:folder('1HNOCqQsjJ-RJNUc0TtoSjXRr3MX-R8jf'),color:C.sand,subject:'תנ״ך'},
+  {y:2026,m:12,d:24,name:'מבחן פיזיולוגיה',detail:'מערכת הלב וכלי הדם · מסלולי הספקת אנרגיה · מערכת הנשימה',url:folder('1qAJqaG5A-9Cv_1GlJmq_I2xkXzguH704'),color:C.rose,subject:'פיזיולוגיה'},
+  {y:2027,m:5,d:5,name:'בגרות בפסיכולוגיה',url:folder('1on8BT_etZSULeHtmoFyOKaUyjWDKD3Ny'),color:C.lavender,far:true,subject:'פסיכולוגיה'},
+];
+const D=(id,name,subject,emoji,url,note,color)=>({id,name,subject,emoji,url,note,color});
+const summaries=[
+  D('1IEoznfSvMiEHB-rW1LlqdNu41uNDSj10','סיכום מבוא לפסיכולוגיה','פסיכולוגיה','🧠','https://docs.google.com/document/d/1IEoznfSvMiEHB-rW1LlqdNu41uNDSj10/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
+  D('1W8iZchj2nm97ULpTzGl9CaGeDCy_8WGw','סיכום פסיכולוגיה התפתחותית מעודכן לבגרות 2027','פסיכולוגיה','🧠','https://docs.google.com/document/d/1W8iZchj2nm97ULpTzGl9CaGeDCy_8WGw/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
+  D('1-gjTgut5yO20Z3qEPTunZLq8JXPCWrxA','סיכום רגשות ולחץ לבגרות 2027','פסיכולוגיה','🧠','https://docs.google.com/document/d/1-gjTgut5yO20Z3qEPTunZLq8JXPCWrxA/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
+  D('1bWislvCZRJi2AOksyJK2t7vmEJ3ZC_IH','סיכום קוגניטיבית בגרות 2027','פסיכולוגיה','🧠','https://docs.google.com/document/d/1bWislvCZRJi2AOksyJK2t7vmEJ3ZC_IH/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
+  D('16QsjYaSAp7ItG2XUX_uqUC82GYRsY7p4','סיכום פסיכולוגיה חברתית - בגרות 2027','פסיכולוגיה','🧠','https://docs.google.com/document/d/16QsjYaSAp7ItG2XUX_uqUC82GYRsY7p4/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
+  D('1DPaHkvwYI6f_52n1LXPtmdOrFM4MSsZsgAL39rMk9AI','סיכום סוציולוגיה','סוציולוגיה','👥',SOCIO_DOC,'רלוונטי למבחן מגמות אשכול ב׳ · 19.11',C.mint),
+  D('1FkUa3Z_j7LNqpaCvwM5R_IArod_EeaeV','מסלולי אספקת אנרגיה - סיכום שיעור מס׳ 1','פיזיולוגיה','⚡','https://docs.google.com/document/d/1FkUa3Z_j7LNqpaCvwM5R_IArod_EeaeV/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פיזיולוגיה · DOCX',C.rose),
+  D('1AJcwclKxWUEy_D6nmoDUZmlZmYv6H-tQ','מסלולי אספקת האנרגיה - סיכום יא חנה סנש','פיזיולוגיה','⚡','https://docs.google.com/document/d/1AJcwclKxWUEy_D6nmoDUZmlZmYv6H-tQ/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פיזיולוגיה · DOCX',C.rose),
+  D('1KxGt0AeWiE4oOsbIZFY3rLx5mm4LPpi1','מערכת הלב וכלי הדם - סיכום שיעור 2026','פיזיולוגיה','🫀','https://docs.google.com/document/d/1KxGt0AeWiE4oOsbIZFY3rLx5mm4LPpi1/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פיזיולוגיה · DOCX',C.rose),
+  D('1WVn8R3VmthunDF-vxV5jotno7B0SgU5b','Sport 2027 - נושאי הבחינה בחינוך גופני','ספורט','🏅','https://drive.google.com/file/d/1WVn8R3VmthunDF-vxV5jotno7B0SgU5b/view?usp=drivesdk&authuser=y0546367987%40gmail.com','ספורט · PDF · סמל שאלון 41381',C.green),
+  D('1vtoHFku07b0JDer265rWkn_2WxcRhSuT','סיפורי אבות - תולדות אברהם, יצחק ויעקב','תנ״ך','📖','https://docs.google.com/document/d/1vtoHFku07b0JDer265rWkn_2WxcRhSuT/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','תנ״ך · DOC · תולדות אברהם, יצחק ויעקב',C.sand),
+  D('1BFPOF-Wns9Di2WEKV9QoDRb4LY7NkvV3','חוק וחברה - ויקרא יט להיות בן אדם טוב','תנ״ך','📖','https://docs.google.com/document/d/1BFPOF-Wns9Di2WEKV9QoDRb4LY7NkvV3/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','תנ״ך · DOCX · ויקרא י״ט',C.sand),
+  D('1wDBk8pVp-m-oTGnsTNL9vVaOjNmqDMkQ','תרגול פרק החוק - שאלות מהפרק השלישי בבגרות','תנ״ך','📖','https://drive.google.com/file/d/1wDBk8pVp-m-oTGnsTNL9vVaOjNmqDMkQ/view?usp=drivesdk&authuser=y0546367987%40gmail.com','תנ״ך · PDF · שאלות בגרות · פרק החוק',C.sand),
+  D('1fjQksZdOPk0iSCoRIC4hw0bikKgqUZij','תרגול בראשית יב ובראשית טו - שאלות מהפרק הראשון בבגרות','תנ״ך','📖','https://drive.google.com/file/d/1fjQksZdOPk0iSCoRIC4hw0bikKgqUZij/view?usp=drivesdk&authuser=y0546367987%40gmail.com','תנ״ך · PDF · שאלות בגרות · בראשית י״ב וט״ו',C.sand),
+];
+const councilItems=[
+  {id:'canva-rabin-2026',name:'מצגת יום הזיכרון ליצחק רבין',emoji:'🕯️',url:'https://www.canva.com/design/DAHYA7ffjg0/mVw7ntXotfh-BD8c4nyn3A/edit',note:'Canva · מצגת · 4 שקופיות',color:C.pink},
+];
+const hebDays=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+const hebMonths=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+function daysUntil(ex){const now=new Date();const today=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();const target=new Date(ex.y,ex.m-1,ex.d).getTime();return Math.round((target-today)/86400000);}
+function countdown(ex){const d=daysUntil(ex);if(d<0)return 'עבר';if(d===0)return 'היום!';if(d===1)return 'מחר!';return `עוד ${d} ימים`;}
+function examWeekday(ex){return `יום ${hebDays[new Date(ex.y,ex.m-1,ex.d).getDay()]}`;}
+function subjectSummaries(n){return summaries.filter(s=>s.subject===n);}
+function nextExamFor(n){return exams.filter(ex=>ex.subject===n&&daysUntil(ex)>=0).sort((a,b)=>daysUntil(a)-daysUntil(b))[0];}
+const IL_DAY=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem'});
+function todayKey(){return IL_DAY.format(new Date());}
+function shiftDayKey(key,delta){const [y,m,d]=key.split('-').map(Number);return new Date(Date.UTC(y,m-1,d+delta)).toISOString().slice(0,10);}
+function computeStreaks(days){
+  const set=new Set(Object.keys(days).filter(k=>days[k]));
+  let cursor=set.has(todayKey())?todayKey():shiftDayKey(todayKey(),-1);
+  let current=0;
+  while(set.has(cursor)){current++;cursor=shiftDayKey(cursor,-1);}
+  let best=0,run=0,prev='';
+  for(const k of [...set].sort()){run=prev&&k===shiftDayKey(prev,1)?run+1:1;if(run>best)best=run;prev=k;}
+  return {current,best};
+}
+const store={
+  get studied(){try{return JSON.parse(localStorage.getItem('studied.v1')||'{}')}catch(e){return {}}},
+  set studied(v){localStorage.setItem('studied.v1',JSON.stringify(v))},
+  get days(){try{return JSON.parse(localStorage.getItem('studyDays.v1')||'{}')}catch(e){return {}}},
+  set days(v){localStorage.setItem('studyDays.v1',JSON.stringify(v))},
+};
+function markStudyDay(){const d=store.days;d[todayKey()]=true;store.days=d;}
+function esc(s){return s;}
+function streakHtml(){
+  const {current,best}=computeStreaks(store.days);
+  return `<div class="streak-card"><span class="streak-flame" aria-hidden="true">🔥</span><span class="streak-num">${current}</span><span class="streak-text"><span class="streak-label">${current===1?'יום רצף':'ימי רצף'}</span><span class="streak-best">השיא שלך: ${best}</span></span><span class="streak-hint">יום נספר עם ״למדתי״</span></div>`;
+}
+function nextExamHtml(){
+  const upcoming=exams.filter(ex=>!ex.far&&daysUntil(ex)>=0);
+  if(!upcoming.length)return '';
+  const min=Math.min(...upcoming.map(daysUntil));
+  const sameDay=upcoming.filter(ex=>daysUntil(ex)===min);
+  const first=sameDay[0];
+  return `<div class="next-exam"><span class="next-label">המבחן הקרוב 🎯</span>
+    <div class="next-count-row">${min>1?`<span class="next-num">${min}</span><span class="next-word">ימים</span>`:min===1?`<span class="next-word is-big">מחר!</span>`:`<span class="next-word is-big">היום! בהצלחה 🍀</span>`}</div>
+    <span class="next-name">${sameDay.map(ex=>ex.name).join(' + ')}</span>
+    <span class="next-date">${examWeekday(first)}, ${first.d} ב${hebMonths[first.m-1]}${first.time?` · ${first.time}`:''}</span>
+    ${first.url?`<a class="file-button next-link" href="${first.url}" target="_blank" rel="noreferrer">${first.hasSummary?'פתחי את הסיכום 📖':'פתחי את תיקיית המקצוע'}</a>`:''}
+  </div>`;
+}
+function progressHtml(done,total,color){
+  const pct=total>0?Math.round(done/total*100):0;
+  return `<div class="pbar-wrap"><div class="pbar" style="border-color:${color.border}" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}"><span style="width:${pct}%;background:${color.accent}"></span></div><span class="pbar-text">${total>0?`למדת ${done} מתוך ${total} סיכומים · ${pct}%`:'עוד אין סיכומים במקצוע'}</span></div>`;
+}
+function sprintHtml(){
+  const studied=store.studied;
+  const inWindow=exams.filter(ex=>ex.subject&&!ex.far&&daysUntil(ex)>=0&&daysUntil(ex)<=PROGRESS_DAYS);
+  if(!inWindow.length)return '';
+  const cards=inWindow.map(ex=>{
+    const subj=subjects.find(s=>s.name===ex.subject);
+    const list=subjectSummaries(ex.subject);
+    const done=list.filter(s=>studied[s.id]).length;
+    const days=daysUntil(ex);
+    return `<a href="#/subject/${subj.key}" class="sprint-card" style="background:${subj.color.bg};border-color:${subj.color.border}">
+      <span class="sprint-head"><span class="sprint-name">${subj.emoji} ${ex.name}</span><span class="sprint-days" style="color:${subj.color.accent}">${days===0?'היום!':days===1?'מחר!':`עוד ${days} ימים`}</span></span>
+      ${progressHtml(done,list.length,subj.color)}</a>`;
+  }).join('');
+  return `<section class="group"><h2 class="group-label">הספרינט האחרון ⏳</h2><div class="sprint">${cards}</div></section>`;
+}
+function monthWeeks(y,m){
+  const first=new Date(y,m-1,1);const days=new Date(y,m,0).getDate();
+  const weeks=[];let week=new Array(first.getDay()).fill(null);
+  for(let d=1;d<=days;d++){week.push(d);if(week.length===7){weeks.push(week);week=[];}}
+  if(week.length){while(week.length<7)week.push(null);weeks.push(week);}
+  return weeks;
+}
+const novExams={9:[{t:'אנגלית',c:C.peach}],17:[{t:'פסיכו׳',c:C.lavender},{t:'אשכול א׳',c:C.pink}],19:[{t:'אשכול ב׳',c:C.mint}],22:[{t:'היסטוריה',c:C.clay}],26:[{t:'לשון',c:C.lemon}],30:[{t:'תנ״ך',c:C.sand}]};
+function novemberHtml(){
+  const weeks=monthWeeks(2026,11);
+  const now=new Date();
+  const isThisMonth=now.getFullYear()===2026&&now.getMonth()===10;
+  const today=now.getDate();
+  const head=hebDays.map(d=>`<div>${d}</div>`).join('');
+  const body=weeks.map(week=>`<div class="month-week">${week.map(day=>{
+    const marks=day?novExams[day]:undefined;
+    const cls=['month-day',day===null?'is-empty':'',marks?'has-exam':'',isThisMonth&&day===today?'is-today':''].join(' ');
+    return `<div class="${cls}">${day!==null?`<span class="month-num">${day}</span>`:''}${marks?marks.map(mk=>`<span class="month-exam" style="background:${mk.c.bg};color:${mk.c.accent}">${mk.t}</span>`).join(''):''}</div>`;
+  }).join('')}</div>`).join('');
+  return `<div class="month" role="table" aria-label="יומן נובמבר 2026"><div class="month-head" role="row">${head}</div>${body}</div>`;
+}
+function examBoardHtml(){
+  return `<div class="exams">${exams.map(ex=>{
+    const chipStyle=ex.color?`background:${ex.color.bg};color:${ex.color.accent}`:'';
+    const inner=`<span class="exam-date" style="${chipStyle}"><strong>${ex.d}</strong><span>${hebMonths[ex.m-1]}${ex.far?` ${ex.y}`:''}</span></span>
+      <span class="exam-body"><span class="exam-name">${ex.name}${ex.hasSummary?`<span class="exam-pill" style="${chipStyle}">יש סיכום ✓</span>`:''}</span>
+      <span class="exam-meta">${examWeekday(ex)}${ex.time?` · ${ex.time}`:''}${ex.detail?` · ${ex.detail}`:''}</span></span>
+      <span class="exam-count" style="${ex.color?`color:${ex.color.accent}`:''}">${countdown(ex)}</span>`;
+    return ex.url
+      ?`<a class="exam-row file-hover-wrap" href="${ex.url}" target="_blank" rel="noreferrer"><span class="file-hover-underline exam-flex">${inner}</span></a>`
+      :`<div class="exam-row"><span class="exam-flex">${inner}</span></div>`;
+  }).join('')}</div>`;
+}
+function summaryRowHtml(s){
+  const studied=store.studied;
+  const on=!!studied[s.id];
+  return `<div class="summary-row ${on?'is-studied':''}" ${on?`style="background:${s.color.bg};border-color:${s.color.border}"`:''}>
+    <span class="summary-top"><span class="summary-chip" style="background:${s.color.bg};border-color:${s.color.border}">${s.emoji}</span>
+      <span class="summary-body"><a class="summary-name file-hover-wrap" href="${s.url}" target="_blank" rel="noreferrer"><span class="file-hover-underline">${s.name}</span></a>
+      <span class="summary-note">${s.note}</span></span></span>
+    <span class="summary-actions"><button type="button" class="studied-toggle ${on?'is-on':''}" ${on?`style="background:${s.color.accent};border-color:${s.color.accent}"`:''} data-toggle="${s.id}" aria-pressed="${on}">${on?'✓ למדתי!':'למדתי?'}</button></span>
+  </div>`;
+}
+function summaryListHtml(items){
+  return `<div class="summaries">${items.map(summaryRowHtml).join('')}</div>`;
+}
+function subjectTileHtml(s){
+  const count=subjectSummaries(s.name).length;
+  return `<a href="#/subject/${s.key}" class="subject" style="background:${s.color.bg};border-color:${s.color.border}">
+    <span class="subject-emoji">${s.emoji}</span><span class="subject-name">${s.name}</span>
+    <span class="subject-count" style="color:${s.color.accent}">${count>0?`${count} סיכומים`:'עדיין ריקה'}</span></a>`;
+}
+function searchResultsHtml(q){
+  const query=q.trim();
+  const ms=summaries.filter(s=>s.name.includes(query)||s.subject.includes(query)||s.note.includes(query));
+  const mj=subjects.filter(s=>s.name.includes(query));
+  let out='';
+  if(mj.length)out+=`<section class="group"><h2 class="group-label">מקצועות</h2><div class="subjects">${mj.map(subjectTileHtml).join('')}</div></section>`;
+  if(ms.length)out+=`<section class="group"><h2 class="group-label">סיכומים</h2>${summaryListHtml(ms)}</section>`;
+  if(!mj.length&&!ms.length)out=`<p class="no-results">לא נמצאו תוצאות ל״${query}״</p>`;
+  return out;
+}
+function homeHtml(){
+  return `
+  <header class="file-header"><h1 class="file-title">Study Coach 🎀</h1><div class="file-fact">עודכן 18 באוקטובר</div></header>
+  ${nextExamHtml()}
+  ${sprintHtml()}
+  <div class="hero-wrap hero-gap"><img src="hero.jpg" alt="דמות מצוירת מחזיקה כפכף וכתוב GO STUDY"></div>
+  ${streakHtml()}
+  <div class="search" role="search"><span aria-hidden="true">🔎</span><input id="search-input" type="search" placeholder="חיפוש סיכום או מקצוע…" aria-label="חיפוש סיכום או מקצוע"></div>
+  <div id="home-below"></div>`;
+}
+function homeBelowHtml(q){
+  if(q&&q.trim().length>0)return searchResultsHtml(q);
+  return `
+  <section class="group"><h2 class="group-label">לוח מבחנים</h2>${examBoardHtml()}</section>
+  <section class="group"><h2 class="group-label">נובמבר 2026</h2>${novemberHtml()}</section>
+  <section class="group"><h2 class="group-label">הסיכומים שלי</h2>${summaryListHtml(summaries)}</section>
+  <section class="group"><h2 class="group-label">המקצועות שלי</h2><div class="subjects">${subjects.map(subjectTileHtml).join('')}</div>
+    <div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${ROOT}" target="_blank" rel="noreferrer">פתחי את כל התיקייה בדרייב</a></div></section>
+  <section class="group"><h2 class="group-label">מועצת תלמידים 🎤</h2>
+    <div class="summaries">${councilItems.map(item=>`
+      <div class="summary-row"><span class="summary-top"><span class="summary-chip" style="background:${item.color.bg};border-color:${item.color.border}">${item.emoji}</span>
+      <span class="summary-body"><a class="summary-name file-hover-wrap" href="${item.url}" target="_blank" rel="noreferrer"><span class="file-hover-underline">${item.name}</span></a>
+      <span class="summary-note">${item.note}</span></span></span></div>`).join('')}</div>
+    <div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${folder(COUNCIL_ID)}" target="_blank" rel="noreferrer">פתחי את תיקיית המועצה בדרייב</a></div></section>`;
+}
+function subjectPageHtml(subj){
+  const list=subjectSummaries(subj.name);
+  const studied=store.studied;
+  const done=list.filter(s=>studied[s.id]).length;
+  const exam=nextExamFor(subj.name);
+  return `
+  <div><a href="#/" class="file-button back-link" data-variant="secondary">‹ כל המקצועות</a></div>
+  <div class="subject-head"><span class="subject-head-emoji" aria-hidden="true">${subj.emoji}</span><span class="subject-head-name">${subj.name}</span></div>
+  ${exam?`<div class="subj-exam" style="background:${subj.color.bg};border-color:${subj.color.border}">
+    <span class="subj-exam-name">${exam.name}</span>
+    <span class="subj-exam-meta">${examWeekday(exam)}, ${exam.d} ב${hebMonths[exam.m-1]}${exam.far?` ${exam.y}`:''}${exam.time?` · ${exam.time}`:''} · ${countdown(exam)}</span></div>`:''}
+  ${list.length?`<section class="group"><h2 class="group-label">ההתקדמות שלי</h2>${progressHtml(done,list.length,subj.color)}</section>`:''}
+  ${list.length?`<section class="group"><h2 class="group-label">הסיכומים</h2>${summaryListHtml(list)}</section>`:''}
+  <div style="margin-top:14px"><a class="file-button" data-variant="secondary" href="${folder(subj.id)}" target="_blank" rel="noreferrer">פתחי את התיקייה בדרייב</a></div>`;
+}
+const app=document.getElementById('app');
+let homeQuery='';
+function render(){
+  const hash=location.hash||'#/';
+  const m=hash.match(/^#\/subject\/([a-z]+)$/);
+  if(m){
+    const subj=subjects.find(s=>s.key===m[1]);
+    app.innerHTML=(subj?subjectPageHtml(subj):'')+`<div class="closing">הדף עודכן ב-18.10.2026</div>`;
+  }else{
+    app.innerHTML=homeHtml()+`<div class="closing">הדף עודכן ב-18.10.2026</div>`;
+    const input=document.getElementById('search-input');
+    const below=document.getElementById('home-below');
+    below.innerHTML=homeBelowHtml('');
+    input.addEventListener('input',()=>{homeQuery=input.value;below.innerHTML=homeBelowHtml(homeQuery);bindToggles(below);});
+    bindToggles(app);
+  }
+  window.scrollTo(0,0);
+}
+function bindToggles(root){
+  root.querySelectorAll('[data-toggle]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id=btn.getAttribute('data-toggle');
+      const st=store.studied;
+      const turningOn=!st[id];
+      st[id]=turningOn;
+      if(!turningOn)delete st[id];
+      store.studied=st;
+      if(turningOn)markStudyDay();
+      render();
+    });
+  });
+}
+window.addEventListener('hashchange',render);
+render();
+</script>
+</body>
+</html>
