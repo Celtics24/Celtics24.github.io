@@ -1,1 +1,265 @@
+// Study Coach - push reminder worker (Cloudflare Workers, free plan)
+// Routes:  POST /subscribe  {subscription}
+//          POST /unsubscribe {endpoint}
+//          POST /studied {endpoint, day}
+// Cron:    runs several times a day; sends exam reminders and streak nudges (Israel time).
+// Secrets/vars (set in Cloudflare dashboard, NEVER in the repo):
+//   VAPID_PRIVATE_JWK (secret) - VAPID private key as JWK JSON
+//   VAPID_PUBLIC_KEY  (var)    - VAPID public key, base64url
+//   VAPID_SUBJECT     (var)    - e.g. mailto:y0546367987@gmail.com
+//   SITE_ORIGIN       (var)    - https://celtics24.github.io
+//   SUBS              (KV binding) - stores subscriptions + study days
 
+const EXAMS_URL = 'https://celtics24.github.io/exams.json';
+
+// ---------- base64url helpers ----------
+function b64uToBytes(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function bytesToB64u(bytes) {
+  let bin = '';
+  const arr = new Uint8Array(bytes);
+  for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+const te = new TextEncoder();
+
+// ---------- HKDF (RFC 5869) ----------
+async function hkdf(salt, ikm, info, len) {
+  const key = await crypto.subtle.importKey('raw', salt, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const prk = new Uint8Array(await crypto.subtle.sign('HMAC', key, ikm));
+  const prkKey = await crypto.subtle.importKey('raw', prk, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const out = new Uint8Array(len);
+  let prev = new Uint8Array(0);
+  let offset = 0;
+  for (let i = 1; offset < len; i++) {
+    const data = new Uint8Array(prev.length + info.length + 1);
+    data.set(prev, 0); data.set(info, prev.length); data[data.length - 1] = i;
+    prev = new Uint8Array(await crypto.subtle.sign('HMAC', prkKey, data));
+    out.set(prev.subarray(0, Math.min(prev.length, len - offset)), offset);
+    offset += prev.length;
+  }
+  return out;
+}
+function concat(...arrays) {
+  const total = arrays.reduce((n, a) => n + a.length, 0);
+  const out = new Uint8Array(total);
+  let o = 0;
+  for (const a of arrays) { out.set(a, o); o += a.length; }
+  return out;
+}
+
+// ---------- VAPID JWT (RFC 8292, ES256) ----------
+async function vapidJwt(endpoint, env) {
+  const jwk = JSON.parse(env.VAPID_PRIVATE_JWK);
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const header = bytesToB64u(te.encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
+  const payload = bytesToB64u(te.encode(JSON.stringify({
+    aud: new URL(endpoint).origin,
+    exp: Math.floor(Date.now() / 1000) + 12 * 60 * 60,
+    sub: env.VAPID_SUBJECT,
+  })));
+  const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, te.encode(`${header}.${payload}`));
+  return `${header}.${payload}.${bytesToB64u(sig)}`;
+}
+
+// ---------- Payload encryption (RFC 8291 aes128gcm / RFC 8188) ----------
+async function encryptPayload(plaintext, subscription) {
+  const uaPublic = b64uToBytes(subscription.keys.p256dh);
+  const authSecret = b64uToBytes(subscription.keys.auth);
+
+  const clientPub = await crypto.subtle.importKey('raw', uaPublic, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const server = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const ecdhSecret = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: clientPub }, server.privateKey, 256));
+  const asPublic = new Uint8Array(await crypto.subtle.exportKey('raw', server.publicKey));
+
+  const keyInfo = concat(te.encode('WebPush: info\0'), uaPublic, asPublic);
+  const ikm = await hkdf(authSecret, ecdhSecret, keyInfo, 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, te.encode('Content-Encoding: aes128gcm\0'), 16);
+  const nonce = await hkdf(salt, ikm, te.encode('Content-Encoding: nonce\0'), 12);
+
+  const padded = concat(te.encode(plaintext), new Uint8Array([0x02]));
+  const key = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']);
+  const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, tagLength: 128 }, key, padded));
+
+  const rs = new Uint8Array([0, 0, 16, 0]); // record size 4096
+  return concat(salt, rs, new Uint8Array([asPublic.length]), asPublic, sealed);
+}
+
+// ---------- Send one push ----------
+async function sendPush(subscription, message, env) {
+  const body = await encryptPayload(JSON.stringify(message), subscription);
+  const jwt = await vapidJwt(subscription.endpoint, env);
+  const res = await fetch(subscription.endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `vapid t=${jwt}, k=${env.VAPID_PUBLIC_KEY}`,
+      'Content-Encoding': 'aes128gcm',
+      'Content-Type': 'application/octet-stream',
+      TTL: '86400',
+    },
+    body,
+  });
+  return res.status;
+}
+
+// ---------- Israel time helpers ----------
+function israelNow() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const get = t => parts.find(p => p.type === t).value;
+  return { day: `${get('year')}-${get('month')}-${get('day')}`, hour: parseInt(get('hour'), 10) };
+}
+function shiftDay(dayKey, delta) {
+  const [y, m, d] = dayKey.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + delta)).toISOString().slice(0, 10);
+}
+
+// ---------- Reminder content (kind, not pressuring) ----------
+function examTomorrowMessage(exam) {
+  return {
+    title: `מחר: ${exam.name} 📚`,
+    body: 'בא לך לחזור קצת הערב? אפילו 10 דקות עוזרות 💗',
+    url: '/',
+    tag: 'exam-eve',
+  };
+}
+function examTodayMessage(exam) {
+  return {
+    title: `היום: ${exam.name} 🌸`,
+    body: 'בהצלחה! את מוכנה 💪',
+    url: '/',
+    tag: 'exam-day',
+  };
+}
+function streakMessage(streakDays) {
+  return {
+    title: 'הרצף שלך מחכה 🔥',
+    body: streakDays > 1
+      ? `יש לך רצף של ${streakDays} ימים - עוד כמה דקות של ״למדתי״ והוא נשמר`
+      : 'עוד לא סימנת ״למדתי״ היום - כמה דקות וזה נספר 🌱',
+    url: '/',
+    tag: 'streak',
+  };
+}
+
+async function alreadySent(env, endpointHash, day, type) {
+  return (await env.SUBS.get(`log:${endpointHash}:${day}:${type}`)) !== null;
+}
+async function markSent(env, endpointHash, day, type) {
+  await env.SUBS.put(`log:${endpointHash}:${day}:${type}`, '1', { expirationTtl: 60 * 60 * 48 });
+}
+async function endpointHash(endpoint) {
+  const digest = await crypto.subtle.digest('SHA-256', te.encode(endpoint));
+  return bytesToB64u(digest);
+}
+
+async function deliver(env, record, hash, day, type, message) {
+  if (await alreadySent(env, hash, day, type)) return;
+  const status = await sendPush(record.subscription, message, env);
+  if (status === 404 || status === 410) {
+    await env.SUBS.delete(`sub:${hash}`); // subscription is gone, clean up
+    return;
+  }
+  if (status >= 200 && status < 300) await markSent(env, hash, day, type);
+}
+
+async function runReminders(env) {
+  const { day, hour } = israelNow();
+  if (![7, 18, 20].includes(hour)) return; // cron covers extra hours for DST; act only on IL hours
+
+  let exams = [];
+  try {
+    const res = await fetch(EXAMS_URL, { cf: { cacheTtl: 300 } });
+    if (res.ok) exams = await res.json();
+  } catch (e) { /* no exams data, streak nudges still work */ }
+  const examDay = e => e.date;
+  const todayExams = exams.filter(e => examDay(e) === day);
+  const tomorrowExams = exams.filter(e => examDay(e) === shiftDay(day, 1));
+
+  let cursor;
+  do {
+    const page = await env.SUBS.list({ prefix: 'sub:', cursor });
+    for (const key of page.keys) {
+      const record = await env.SUBS.get(key.name, 'json');
+      if (!record || !record.subscription) continue;
+      const hash = key.name.slice(4);
+      if (hour === 7) {
+        for (const ex of todayExams) await deliver(env, record, hash, day, 'exam-day', examTodayMessage(ex));
+      } else if (hour === 18) {
+        for (const ex of tomorrowExams) await deliver(env, record, hash, day, 'exam-eve', examTomorrowMessage(ex));
+      } else if (hour === 20) {
+        const last = record.lastStudied || '';
+        const studiedToday = last === day;
+        const hadRecentStreak = last >= shiftDay(day, -3); // studied in the last 3 days
+        if (!studiedToday && hadRecentStreak && tomorrowExams.length === 0) {
+          const streakDays = record.streakDays || 0;
+          await deliver(env, record, hash, day, 'streak', streakMessage(streakDays));
+        }
+      }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+}
+
+// ---------- HTTP API ----------
+function cors(env) {
+  return {
+    'Access-Control-Allow-Origin': env.SITE_ORIGIN || 'https://celtics24.github.io',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
+function jsonResponse(obj, status, env) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...cors(env) },
+  });
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(env) });
+    if (url.pathname === '/health') return jsonResponse({ ok: true }, 200, env);
+
+    if (request.method === 'POST' && url.pathname === '/subscribe') {
+      const { subscription } = await request.json();
+      if (!subscription || !subscription.endpoint || !subscription.keys) return jsonResponse({ error: 'bad subscription' }, 400, env);
+      const hash = await endpointHash(subscription.endpoint);
+      const existing = (await env.SUBS.get(`sub:${hash}`, 'json')) || {};
+      await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, subscription }));
+      return jsonResponse({ ok: true }, 200, env);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/unsubscribe') {
+      const { endpoint } = await request.json();
+      if (!endpoint) return jsonResponse({ error: 'missing endpoint' }, 400, env);
+      await env.SUBS.delete(`sub:${await endpointHash(endpoint)}`);
+      return jsonResponse({ ok: true }, 200, env);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/studied') {
+      const { endpoint, day, streakDays } = await request.json();
+      if (!endpoint || !day) return jsonResponse({ error: 'missing fields' }, 400, env);
+      const hash = await endpointHash(endpoint);
+      const existing = (await env.SUBS.get(`sub:${hash}`, 'json')) || {};
+      await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, lastStudied: day, streakDays: streakDays || 0 }));
+      return jsonResponse({ ok: true }, 200, env);
+    }
+
+    return jsonResponse({ error: 'not found' }, 404, env);
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runReminders(env));
+  },
+};
