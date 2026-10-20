@@ -18,7 +18,7 @@
 //   ADMIN_TOKEN       (secret) - lets Instinct seed/update content; NEVER in the repo
 //   SUBS              (KV binding) - stores subscriptions + study days + per-user content
 
-const EXAMS_URL = 'https://celtics24.github.io/exams.json';
+// Legacy subscriptions read the private profile selected during migration.
 
 // ---------- base64url helpers ----------
 function b64uToBytes(s) {
@@ -184,8 +184,9 @@ async function runReminders(env) {
   const { day, hour } = israelNow();
   if (![7, 18, 20].includes(hour)) return; // cron covers extra hours for DST; act only on IL hours
 
-  let legacyExams = [];
-  try { const res = await fetch(EXAMS_URL); if (res.ok) legacyExams = await res.json(); } catch(e) {}
+  const legacyHash = await env.SUBS.get('config:legacyProfile');
+  const legacyContent = legacyHash ? await env.SUBS.get(`content:${legacyHash}`, 'json') : null;
+  const legacyExams = legacyContent?.content?.exams || [];
   const examDay = e => e.date || `${e.y}-${pad2(e.m)}-${pad2(e.d)}`;
   let cursor;
   do {
@@ -319,6 +320,24 @@ async function listSyncHashes(env) {
   return hashes;
 }
 
+
+async function profileKey(env,code){const key=await syncKey(code);const canonical=await env.SUBS.get(`alias:${key.slice(5)}`);return canonical?`sync:${canonical}`:key;}
+// KV counters are best-effort across locations. Local counters cover bursts per isolate.
+const accessCounters=new Map();
+async function accessLimit(request,env,path){
+  const ip=request.headers.get('CF-Connecting-IP')||'unknown';
+  const bucket=Math.floor(Date.now()/900000);
+  const group=path==='/sync/create'?'create':path.startsWith('/auth/')?'auth':'access';
+  const max=group==='create'?8:group==='auth'?12:180;
+  const key=`limit:${await endpointHash(ip)}:${bucket}:${group}`;
+  const local=accessCounters.get(key)||0;
+  const remote=Number(await env.SUBS.get(key)||0);
+  const count=Math.max(local,remote)+1;
+  accessCounters.set(key,count);if(accessCounters.size>5000)accessCounters.clear();
+  if(count>max)return true;
+  await env.SUBS.put(key,String(count),{expirationTtl:1800});return false;
+}
+
 // ---------- HTTP API ----------
 function cors(env) {
   return {
@@ -337,6 +356,11 @@ function jsonResponse(obj, status, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if(request.method==='POST' && (url.pathname.startsWith('/sync/') || url.pathname.startsWith('/content/') || url.pathname.startsWith('/auth/'))) {
+      if(Number(request.headers.get('Content-Length')||0)>220000)return jsonResponse({error:'too large'},413,env);
+      const limited=await accessLimit(request,env,url.pathname);
+      if(limited)return jsonResponse({error:'too many attempts',retryAfter:900},429,env);
+    }
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(env) });
     if (url.pathname === '/health') return jsonResponse({ ok: true }, 200, env);
 
@@ -345,7 +369,7 @@ export default {
       if (!subscription || !subscription.endpoint || !subscription.keys) return jsonResponse({ error: 'bad subscription' }, 400, env);
       const hash = await endpointHash(subscription.endpoint);
       const existing = (await env.SUBS.get(`sub:${hash}`, 'json')) || {};
-      await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, subscription, ...(code && await env.SUBS.get(await syncKey(code)) ? { userHash: (await syncKey(code)).slice(5) } : {}) }));
+      await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, subscription, ...(code && await env.SUBS.get(await profileKey(env,code)) ? { userHash: (await profileKey(env,code)).slice(5) } : {}) }));
       return jsonResponse({ ok: true }, 200, env);
     }
 
@@ -365,6 +389,31 @@ export default {
       return jsonResponse({ ok: true }, 200, env);
     }
 
+    if(url.pathname.startsWith('/auth/')) {
+      if(request.method!=='POST')return jsonResponse({error:'method not allowed'},405,env);
+      let b;try{b=await request.json();}catch{return jsonResponse({error:'bad json'},400,env);}
+      if(url.pathname==='/auth/recovery/create'){
+        if(!/^[A-Za-z2-9]{8}$/.test(b.code||''))return jsonResponse({error:'bad code'},400,env);
+        const key=await profileKey(env,b.code);if(!await env.SUBS.get(key))return jsonResponse({error:'unknown code'},404,env);
+        const old=await env.SUBS.get(`recovery-profile:${key.slice(5)}`);if(old)await env.SUBS.delete(`recovery:${old}`);
+        const secret=bytesToB64u(crypto.getRandomValues(new Uint8Array(32)));
+        const digest=await endpointHash(secret);
+        await env.SUBS.put(`recovery:${digest}`,key.slice(5));
+        await env.SUBS.put(`recovery-profile:${key.slice(5)}`,digest);
+        return jsonResponse({ok:true,recoveryKey:secret},200,env);
+      }
+      if(url.pathname==='/auth/recover'){
+        if(typeof b.recoveryKey!=='string'||b.recoveryKey.length!==43)return jsonResponse({error:'invalid recovery key'},400,env);
+        const hash=await env.SUBS.get(`recovery:${await endpointHash(b.recoveryKey)}`);
+        if(!hash||!await env.SUBS.get(`sync:${hash}`))return jsonResponse({error:'invalid recovery key'},404,env);
+        let code,key;for(let i=0;i<5;i++){code=generateSyncCode();key=await syncKey(code);if(!await env.SUBS.get(key)&&!await env.SUBS.get(`alias:${key.slice(5)}`))break;code=null;}
+        if(!code)return jsonResponse({error:'try again'},503,env);
+        await env.SUBS.put(`alias:${key.slice(5)}`,hash);
+        return jsonResponse({ok:true,code},200,env);
+      }
+      return jsonResponse({error:'not found'},404,env);
+    }
+
     if (url.pathname.startsWith('/content/') || url.pathname.startsWith('/admin/')) {
       if (request.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405, env);
       let body;
@@ -373,7 +422,7 @@ export default {
       if (url.pathname.startsWith('/content/')) {
         const code = typeof body.code === 'string' ? body.code.trim() : '';
         if (!/^[A-Za-z2-9]{8}$/.test(code)) return jsonResponse({ error: 'bad code' }, 400, env);
-        const hash = (await syncKey(code)).slice(5);
+        const hash = (await profileKey(env,code)).slice(5);
         if ((await env.SUBS.get(`sync:${hash}`)) === null) return jsonResponse({ error: 'unknown code' }, 404, env);
         if (url.pathname === '/content/get') {
           const rec = await env.SUBS.get(`content:${hash}`, 'json');
@@ -399,6 +448,11 @@ export default {
       // admin (Instinct): token-protected; "user" is the first 10 chars of the hash, optional if only one user exists
       if (!(await adminAuthorized(env, body.token))) return jsonResponse({ error: 'forbidden' }, 403, env);
       const hashes = await listSyncHashes(env);
+      if (url.pathname === '/admin/migrate-legacy') {
+        if(!body.user || !hashes.some(h=>h.startsWith(body.user)))return jsonResponse({error:'unknown user'},400,env);
+        await env.SUBS.put('config:legacyProfile',hashes.find(h=>h.startsWith(body.user)));
+        return jsonResponse({ok:true},200,env);
+      }
       if (url.pathname === '/admin/users') {
         const users = [];
         for (const h of hashes) users.push({ user: h.slice(0, 10), hasContent: (await env.SUBS.get(`content:${h}`)) !== null });
@@ -441,7 +495,7 @@ export default {
 
       const code = typeof body.code === 'string' ? body.code.trim() : '';
       if (!/^[A-Za-z2-9]{8}$/.test(code)) return jsonResponse({ error: 'bad code' }, 400, env);
-      const key = await syncKey(code);
+      const key = await profileKey(env,code);
 
       if (url.pathname === '/sync/pull') {
         const record = await env.SUBS.get(key, 'json');
