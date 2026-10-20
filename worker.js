@@ -482,6 +482,40 @@ export default {
           if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
           return jsonResponse({ ok: true, v: rec.v, content: rec.content }, 200, env);
         }
+        if(url.pathname==='/content/notebook'){
+          const rec=await env.SUBS.get(`content:${hash}`,'json');if(!rec)return jsonResponse({error:'no content'},404,env);
+          const c=rec.content;c.notebooks=Array.isArray(c.notebooks)?c.notebooks:[];
+          let now=new Date().toISOString();const title=String(body.title||'').trim(),text=String(body.text||'').trim();
+          let n=c.notebooks.find(n=>n.id===body.notebookId),id;
+          const fail=(error,status=400)=>jsonResponse({error},status,env);
+          if(body.action==='setup'){
+            for(const subject of c.subjects){if(c.notebooks.some(n=>n.subjectKey===subject.key))continue;if(c.notebooks.length>=60)break;c.notebooks.push({id:'nb-'+crypto.randomUUID(),subjectKey:subject.key,title:subject.name,color:['pink','blue','purple','mint','orange'][c.notebooks.length%5],pages:[],createdAt:now,updatedAt:now});}
+          }else if(body.action==='create'){
+            if(c.notebooks.length>=60||!title||title.length>100||!c.subjects.some(s=>s.key===body.subjectKey))return fail('invalid notebook');
+            n={id:'nb-'+crypto.randomUUID(),subjectKey:body.subjectKey,title,color:['pink','blue','purple','mint','orange'].includes(body.color)?body.color:'pink',pages:[],createdAt:now,updatedAt:now};c.notebooks.push(n);id=n.id;
+          }else{
+            if(!n)return fail('not found',404);
+            if(body.expectedUpdatedAt!==n.updatedAt)return fail('conflict',409);
+            now=new Date(Math.max(Date.now(),Date.parse(n.updatedAt)+1)).toISOString();
+            if(body.action==='delete'){c.notebooks=c.notebooks.filter(x=>x.id!==n.id);}
+            else if(body.action==='rename'){if(!title||title.length>100)return fail('invalid notebook');n.title=title;n.updatedAt=now;}
+            else if(body.action==='save-page'){
+              if(!title||title.length>200||!text||text.length>20000)return fail('invalid page');
+              let page=n.pages.find(p=>p.id===body.pageId);
+              if(body.pageId&&!page)return fail('not found',404);
+              if(!page){if(n.pages.length>=100)return fail('page limit');page={id:'pg-'+crypto.randomUUID(),createdAt:now};n.pages.push(page);}
+              Object.assign(page,{title,text,updatedAt:now});n.updatedAt=now;id=page.id;
+            }else if(body.action==='delete-page'){
+              if(!n.pages.some(p=>p.id===body.pageId))return fail('not found',404);
+              n.pages=n.pages.filter(p=>p.id!==body.pageId);n.updatedAt=now;
+            }else if(body.action==='reorder'){
+              const ids=body.pageIds;if(!Array.isArray(ids)||ids.length!==n.pages.length||new Set(ids).size!==ids.length||ids.some(id=>!n.pages.some(p=>p.id===id)))return fail('invalid order');
+              n.pages=ids.map(id=>n.pages.find(p=>p.id===id));n.updatedAt=now;
+            }else return fail('invalid action');
+          }
+          if(!validContent(c))return fail('content too large');
+          const saved=await saveContent(env,hash,c);return jsonResponse({ok:true,id,content:saved.content},200,env);
+        }
         if(url.pathname==='/content/save-text'){
           const rec=await env.SUBS.get(`content:${hash}`,'json');if(!rec)return jsonResponse({error:'no content'},404,env);
           const title=String(body.title||'').trim(),text=String(body.text||'').trim();
@@ -514,6 +548,8 @@ export default {
           return jsonResponse({ok:true,v:saved.v},200,env);
         }
         if (url.pathname === '/content/put') {
+          const existing=await env.SUBS.get(`content:${hash}`,'json');
+          if(existing?.content?.notebooks)body.content.notebooks=existing.content.notebooks;
           if (!validContent(body.content)) return jsonResponse({ error: 'bad content' }, 400, env);
           const rec = await saveContent(env, hash, body.content);
           return jsonResponse({ ok: true, v: rec.v }, 200, env);
