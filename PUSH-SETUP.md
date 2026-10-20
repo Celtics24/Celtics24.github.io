@@ -13,22 +13,11 @@
 - `wrangler.toml` - תיעוד ההגדרות
 - `vapid-keys.LOCAL-ONLY.json` - מפתחות VAPID. **לא מעלים ל-GitHub לעולם!**
 
-## הצעד היחיד שירדן צריכה לעשות עכשיו
-לפתוח חשבון Cloudflare חינמי:
-1. להיכנס ל-dash.cloudflare.com מהאייפון או מהמק
-2. Sign up - אפשר עם הג'ימייל שלה (y0546367987@gmail.com)
-3. לא צריך כרטיס אשראי, לא צריך דומיין - החשבון החינמי מספיק
-
-אחרי זה אנחנו ממשיכים ביחד (בעזרת עוזי) - בערך 10 דקות:
-1. Workers & Pages ← Create Worker ← שם: study-coach-push ← Deploy
-2. Edit code ← מדביקים את `worker.js` ← Deploy
-3. Settings ← Variables: מוסיפים VAPID_PUBLIC_KEY, VAPID_SUBJECT, SITE_ORIGIN
-4. Settings ← Variables ← Secret: מוסיפים VAPID_PRIVATE_JWK (מהקובץ המקומי - רק לשם!)
-5. KV ← יוצרים namespace בשם study-coach-subs ← קושרים כ-binding בשם SUBS
-6. Triggers ← Cron: `0 4,5,15,16,17,18 * * *`
-7. מעדכנים ב-`push.js` את PUSH_WORKER_URL לכתובת האמיתית של ה-worker
-8. מעלים לריפו: index.html, push.js, sw.js, exams.json (בלי מפתחות!)
-9. באייפון ובאייפד: פותחים את האפליקציה ממסך הבית ולוחצים ״הפעילי״
+## סטטוס ההקמה (עודכן 20.10.2026) - הכל מוכן! ✅
+- החשבון נפתח, ה-Worker באוויר: https://study-coach-push.y0546367987.workers.dev
+- ה-KV, המשתנים והסוד (VAPID) מוגדרים, וה-cron רץ כל יום.
+- מה שנשאר: למזג את ה-PR ב-GitHub (דף טיוטה - https://github.com/Celtics24/Celtics24.github.io/pull/1)
+  ואז באייפון ובאייפד: לפתוח את האפליקציה ממסך הבית וללחוץ "הפעילי" בכרטיס התזכורות.
 
 ## איך מכבים
 - כפתור ״כיבוי״ בכרטיס באתר, או הגדרות האייפון ← התראות ← Study Coach.
