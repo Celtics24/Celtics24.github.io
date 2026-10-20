@@ -99,3 +99,7 @@ async function renderRemindersCard() {
     });
   }
 }
+
+// Initial paint: the main script's first render() runs before this file loads,
+// so fill the card once here; later renders re-fill it via the render() hook.
+renderRemindersCard();
