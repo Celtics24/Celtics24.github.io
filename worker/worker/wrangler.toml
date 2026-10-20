@@ -1,0 +1,20 @@
+# Reference config - the main path is the Cloudflare dashboard (no CLI needed),
+# but this documents the setup if wrangler is ever used.
+name = "study-coach-push"
+main = "worker.js"
+compatibility_date = "2026-10-20"
+
+[triggers]
+# Runs at several UTC hours; the worker itself acts only on 07:00 / 18:00 / 20:00
+# Israel time, so this stays correct across daylight-saving changes.
+crons = ["0 4,5,15,16,17,18 * * *"]
+
+[[kv_namespaces]]
+binding = "SUBS"
+id = "KV_NAMESPACE_ID_FROM_DASHBOARD"
+
+[vars]
+VAPID_PUBLIC_KEY = "BCIqAG5Og0mk5aKHL5lfLBgv13vt-3MWOc4K3sVq4_0JsUj9DrYdtxFbtGWTq4cl_l9CnxFi5igDcuMulfbcEj4"
+VAPID_SUBJECT = "mailto:y0546367987@gmail.com"
+SITE_ORIGIN = "https://celtics24.github.io"
+# VAPID_PRIVATE_JWK goes in Workers secrets ONLY - never here, never in git.
