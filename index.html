@@ -28,12 +28,17 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 .file-card{
-  max-width:680px;margin:24px auto;padding:22px 20px 28px;background:var(--ds-white);
+  max-width:680px;margin:24px auto;padding:calc(env(safe-area-inset-top,0px) + 22px) 20px calc(104px + env(safe-area-inset-bottom,0px));background:var(--ds-white);
   border-radius:24px;box-shadow:var(--ds-elevation-1);
 }
 @media (max-width:740px){ .file-card{margin:0;border-radius:0;min-height:100vh;} }
 .file-header{margin-bottom:14px;position:relative}
-.settings-btn{position:absolute;top:0;left:0;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--pink-200);background:#fff;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;text-decoration:none;color:inherit}
+#tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;pointer-events:none}
+.tabs-inner{pointer-events:auto;width:100%;max-width:680px;display:flex;gap:4px;background:rgb(255 255 255 / .94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1.5px solid var(--pink-200);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px))}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:16px;text-decoration:none;color:var(--ds-ink-3);font-size:11px;font-weight:700}
+.tab-ico{font-size:22px;line-height:1}
+.tab.is-active{color:var(--pink-700);background:var(--pink-100)}
+.page-title{margin:0 0 4px;font-size:28px;font-weight:800}
 .settings-lead{font-size:13.5px;color:var(--ds-ink-2);margin:0 0 4px}
 .file-title{margin:0;font-size:28px;font-weight:800}
 .file-fact{margin-top:2px;font-size:13px;color:var(--ds-ink-2)}
@@ -103,7 +108,7 @@ body{
 .summary-row.is-studied .summary-name{color:var(--ds-ink-2)}
 .summary-note{font-size:12px;color:var(--ds-ink-2)}
 .summary-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.studied-toggle{flex-shrink:0;font:inherit;font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;border:1.5px solid var(--pink-300);background:#fff;color:var(--pink-700);cursor:pointer;margin-inline-start:auto}
+.studied-toggle{min-height:40px;flex-shrink:0;font:inherit;font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;border:1.5px solid var(--pink-300);background:#fff;color:var(--pink-700);cursor:pointer;margin-inline-start:auto}
 .studied-toggle.is-on{color:#fff;border-width:1.5px}
 .subjects{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 @media (min-width:768px){.subjects{grid-template-columns:repeat(4,1fr)}}
@@ -111,7 +116,7 @@ body{
 .subject-emoji{font-size:22px}
 .subject-name{font-weight:600;font-size:14px;color:var(--ds-ink)}
 .subject-count{font-size:12px;color:var(--ds-ink-2)}
-.back-link{align-self:flex-start;margin-bottom:12px}
+.back-link{align-self:flex-start;margin-bottom:12px;min-height:40px;display:inline-flex;align-items:center}
 .subject-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .subject-head-emoji{font-size:34px}
 .subject-head-name{font-size:26px;font-weight:800;color:var(--ds-ink)}
@@ -146,6 +151,12 @@ body{
 </head>
 <body>
 <div class="file-card"><div id="app" class="hub"></div></div>
+<nav id="tabs" aria-label="ניווט"><div class="tabs-inner">
+<a class="tab" data-tab="home" href="#/"><span class="tab-ico" aria-hidden="true">🏠</span>בית</a>
+<a class="tab" data-tab="summaries" href="#/summaries"><span class="tab-ico" aria-hidden="true">📚</span>סיכומים</a>
+<a class="tab" data-tab="exams" href="#/exams"><span class="tab-ico" aria-hidden="true">📅</span>מבחנים</a>
+<a class="tab" data-tab="settings" href="#/settings"><span class="tab-ico" aria-hidden="true">⚙️</span>הגדרות</a>
+</div></nav>
 <script>
 "use strict";
 const ROOT='https://drive.google.com/drive/folders/1nc5ecwjdBMH6XlX2gfK3xN_Ta7Kt7One';
@@ -343,26 +354,35 @@ function searchResultsHtml(q){
 }
 function settingsHtml(){
   return `
-  <div><a href="#/" class="file-button back-link" data-variant="secondary">‹ חזרה</a></div>
-  <header class="file-header"><h1 class="file-title">הגדרות ⚙️</h1><p class="settings-lead">חיבור למכשירים אחרים והתראות</p></header>
+  <header class="file-header"><h1 class="file-title">הגדרות ⚙️</h1></header>
   <section class="group"><h2 class="group-label">חיבור בין מכשירים</h2><div id="sync-card"></div></section>
   <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>`;
 }
 function homeHtml(){
   return `
-  <header class="file-header"><a class="settings-btn" href="#/settings" aria-label="הגדרות">⚙️</a><h1 class="file-title">Study Coach 🎀</h1><div class="file-fact">עודכן 20 באוקטובר</div></header>
+  <header class="file-header"><h1 class="file-title">Study Coach 🎀</h1><div class="file-fact">עודכן 20 באוקטובר</div></header>
   ${nextExamHtml()}
   ${sprintHtml()}
   <div class="hero-wrap hero-gap"><img src="hero.jpg" alt="דמות מצוירת מחזיקה כפכף וכתוב GO STUDY"></div>
   ${streakHtml()}
+  `;
+}
+function summariesPageHtml(){
+  return `
+  <header class="file-header"><h1 class="file-title">סיכומים 📚</h1></header>
   <div class="search" role="search"><span aria-hidden="true">🔎</span><input id="search-input" type="search" placeholder="חיפוש סיכום או מקצוע…" aria-label="חיפוש סיכום או מקצוע"></div>
   <div id="home-below"></div>`;
+}
+function examsPageHtml(){
+  return `
+  <header class="file-header"><h1 class="file-title">מבחנים 📅</h1></header>
+  ${nextExamHtml()}
+  <section class="group"><h2 class="group-label">לוח מבחנים</h2>${examBoardHtml()}</section>
+  <section class="group"><h2 class="group-label">נובמבר 2026</h2>${novemberHtml()}</section>`;
 }
 function homeBelowHtml(q){
   if(q&&q.trim().length>0)return searchResultsHtml(q);
   return `
-  <section class="group"><h2 class="group-label">לוח מבחנים</h2>${examBoardHtml()}</section>
-  <section class="group"><h2 class="group-label">נובמבר 2026</h2>${novemberHtml()}</section>
   <section class="group"><h2 class="group-label">הסיכומים שלי</h2>${summaryListHtml(summaries)}</section>
   <section class="group"><h2 class="group-label">המקצועות שלי</h2><div class="subjects">${subjects.map(subjectTileHtml).join('')}</div>
     <div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${ROOT}" target="_blank" rel="noreferrer">פתחי את כל התיקייה בדרייב</a></div></section>
@@ -379,7 +399,7 @@ function subjectPageHtml(subj){
   const done=list.filter(s=>studied[s.id]).length;
   const exam=nextExamFor(subj.name);
   return `
-  <div><a href="#/" class="file-button back-link" data-variant="secondary">‹ כל המקצועות</a></div>
+  <div><a href="#/summaries" class="file-button back-link" data-variant="secondary">‹ סיכומים</a></div>
   <div class="subject-head"><span class="subject-head-emoji" aria-hidden="true">${subj.emoji}</span><span class="subject-head-name">${subj.name}</span></div>
   ${exam?`<div class="subj-exam" style="background:${subj.color.bg};border-color:${subj.color.border}">
     <span class="subj-exam-name">${exam.name}</span>
@@ -390,21 +410,36 @@ function subjectPageHtml(subj){
 }
 const app=document.getElementById('app');
 let homeQuery='';
+function setTab(name){
+  document.querySelectorAll('#tabs .tab').forEach(t=>{const on=t.getAttribute('data-tab')===name;t.classList.toggle('is-active',on);if(on)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current');});
+}
 function render(){
   const hash=location.hash||'#/';
   const m=hash.match(/^#\/subject\/([a-z]+)$/);
+  const closing=`<div class="closing">הדף עודכן ב-20.10.2026</div>`;
   if(hash==='#/settings'){
+    setTab('settings');
     app.innerHTML=settingsHtml();
-  }else if(m){
-    const subj=subjects.find(s=>s.key===m[1]);
-    app.innerHTML=(subj?subjectPageHtml(subj):'')+`<div class="closing">הדף עודכן ב-20.10.2026</div>`;
-  }else{
-    app.innerHTML=homeHtml()+`<div class="closing">הדף עודכן ב-20.10.2026</div>`;
+  }else if(hash==='#/exams'){
+    setTab('exams');
+    app.innerHTML=examsPageHtml()+closing;
+  }else if(hash==='#/summaries'){
+    setTab('summaries');
+    app.innerHTML=summariesPageHtml()+closing;
     const input=document.getElementById('search-input');
     const below=document.getElementById('home-below');
-    below.innerHTML=homeBelowHtml('');
+    input.value=homeQuery;
+    below.innerHTML=homeBelowHtml(homeQuery);
+    bindToggles(below);
     input.addEventListener('input',()=>{homeQuery=input.value;below.innerHTML=homeBelowHtml(homeQuery);bindToggles(below);});
+  }else if(m){
+    setTab('summaries');
+    const subj=subjects.find(s=>s.key===m[1]);
+    app.innerHTML=(subj?subjectPageHtml(subj):'')+closing;
     bindToggles(app);
+  }else{
+    setTab('home');
+    app.innerHTML=homeHtml()+closing;
   }
   window.scrollTo(0,0);
   if(window.renderRemindersCard)window.renderRemindersCard();
