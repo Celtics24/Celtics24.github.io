@@ -115,24 +115,31 @@ async function enableSyncWithNewCode() {
   migrateLocalMarksToMeta();
   localStorage.setItem(SYNC_CODE_KEY, res.code);
   await syncPush();
+  if(window.loadUserContent) await window.loadUserContent();
   return { ok: true, code: res.code };
 }
 
 async function enableSyncWithExistingCode(rawCode) {
   const code = String(rawCode || '').toUpperCase().replace(/[^A-Z2-9]/g, '');
   if (code.length !== 8) return { ok: false, reason: 'bad-code' };
-  migrateLocalMarksToMeta();
-  const res = await syncApi('/sync/push', { code, studied: loadSyncMeta(), days: store.days });
+  const res = await syncApi('/sync/pull', { code });
   if (res.status === 404) return { ok: false, reason: 'unknown-code' };
   if (!res.ok) return { ok: false, reason: 'server' };
+  if (syncCode() !== code) {
+    store.studied = {}; store.days = {}; saveSyncMeta({});
+    localStorage.removeItem('content.cache.v1');
+    if(window.clearUserContent)window.clearUserContent();
+  }
   localStorage.setItem(SYNC_CODE_KEY, code);
   if (res.record) applyRemoteRecord(res.record);
+  if (window.loadUserContent) await window.loadUserContent();
   return { ok: true, code };
 }
 
 async function unlinkSync(deleteRemote) {
   const code = syncCode();
   localStorage.removeItem(SYNC_CODE_KEY);
+  if(window.clearUserContent) window.clearUserContent();
   if (deleteRemote && code) { try { await syncApi('/sync/destroy', { code }); } catch (e) {} }
 }
 
