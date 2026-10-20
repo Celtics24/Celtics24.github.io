@@ -156,6 +156,7 @@ body{
 :root[data-theme="blue"] .hero-wrap{box-shadow:0 6px 20px rgb(35 91 150 / .10)}
 .theme-options{display:flex;gap:12px}.theme-option{min-height:48px;border:2px solid transparent;border-radius:16px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer}.theme-option[aria-pressed="true"]{outline:2px solid var(--pink-700);outline-offset:3px}
 .onboard{display:flex;flex-direction:column;gap:18px;padding-top:22px}.onboard h1{margin:0}.onboard input,.onboard textarea,.timetable-editor{width:100%;font:inherit;min-height:48px;border:1.5px solid var(--pink-200);border-radius:14px;padding:12px;background:#fff;color:var(--ds-ink)}.onboard textarea{min-height:130px;resize:vertical}.onboard label{font-size:14px;font-weight:600;display:grid;gap:8px}.onboard .file-button{min-height:48px;text-align:center}.form-error{color:#b22636;font-size:13px}.timetable-editor{min-height:120px;margin:10px 0;white-space:pre-wrap}.save-state{font-size:12px;color:var(--ds-ink-2);min-height:16px}
+.add-link-first{display:block;width:100%;min-height:48px;margin-bottom:22px}.privacy-note p{font-size:13px;line-height:1.7;color:var(--ds-ink-2)}.danger{color:#b22636;border-color:#e1a6ae;background:#fff5f5}.confirm-panel{margin-top:14px;padding:16px;border:1px solid #e1a6ae;border-radius:16px}.confirm-panel label{display:block;margin-bottom:14px}.add-link-form{display:grid;gap:12px;padding:18px;background:var(--pink-50);border:1px solid var(--pink-200);border-radius:18px;margin-bottom:18px}.add-link-form label{display:grid;gap:6px;font-size:14px}.add-link-form input,.add-link-form select{width:100%;font:inherit;min-height:46px;border-radius:12px;border:1px solid var(--pink-200);padding:10px;background:#fff;color:var(--ds-ink)}
 </style>
 </head>
 <body>
@@ -319,7 +320,8 @@ function settingsHtml(){
   <header class="file-header"><h1 class="file-title">הגדרות ⚙️</h1></header>
   <section class="group"><h2 class="group-label">צבע האפליקציה</h2><div id="theme-picker"></div></section><section class="group"><h2 class="group-label">אבטחת גישה</h2><div id="security-settings"></div></section><section class="group"><h2 class="group-label">מערכת השעות</h2><div id="timetable-settings"></div></section>
   <section class="group"><h2 class="group-label">חיבור בין מכשירים</h2><div id="sync-card"></div></section>
-  <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>`;
+  <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>
+  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. הקבצים עצמם נשארים בדרייב ובהרשאות שלו.</p><p>קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
 }
 function homeHtml(){
   return `
@@ -332,6 +334,7 @@ function homeHtml(){
 }
 function summariesPageHtml(){
   return `
+  <button class="file-button add-link-first" id="add-file">＋ הוספת קובץ</button><div id="add-file-form"></div>
   <header class="file-header"><h1 class="file-title">סיכומים 📚</h1></header>
   <div class="search" role="search"><span aria-hidden="true">🔎</span><input id="search-input" type="search" placeholder="חיפוש סיכום או מקצוע…" aria-label="חיפוש סיכום או מקצוע"></div>
   <div id="home-below"></div>`;
@@ -410,6 +413,7 @@ function render(){
   if(window.renderRemindersCard)window.renderRemindersCard();
   if(window.renderSyncCard)window.renderSyncCard();
   if(window.renderPreferences)window.renderPreferences();
+  if(window.bindAddFile)window.bindAddFile();
 }
 function bindToggles(root){
   root.querySelectorAll('[data-toggle]').forEach(btn=>{
@@ -429,8 +433,8 @@ function bindToggles(root){
 window.addEventListener('hashchange',render);
 render();
 </script>
-<script src="sync.js?v=20261020c"></script>
-<script src="content.js?v=20261020c"></script>
-<script src="push.js?v=20261020c"></script>
+<script src="sync.js?v=20261020d"></script>
+<script src="content.js?v=20261020d"></script>
+<script src="push.js?v=20261020d"></script>
 </body>
 </html>
