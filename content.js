@@ -18,7 +18,7 @@
     summaries=c.summaries.map(s=>({...text(s),color:col(s.color)}));
     councilItems=(c.councilItems||[]).map(s=>({...text(s),color:col(s.color)}));
     novExams={};for(const [d,list] of Object.entries(c.novExams||{}))novExams[d]=list.map(x=>({t:esc(x.t),c:col(x.c)}));
-    window.userHasDriveRoot=!!c.subjects.some(s=>s.id==='1on8BT_etZSULeHtmoFyOKaUyjWDKD3Ny');
+    ROOT=c.driveRoot||'';COUNCIL_ID=c.councilFolderId||'';window.userHasDriveRoot=!!ROOT;
     window.userContentReady=c.onboardingComplete!==false;
     if(!window.userContentReady)mode='timetable';
     theme(c.preferences?.theme);
@@ -29,15 +29,16 @@
     if(!code()){window.clearUserContent();render();return;}
     loading=true;
     try{const j=await api('/content/get',{code:code()});if(valid(j.content)){apply(j.content);error='';}}
-    catch(e){if(!current)error='לא ניתן לטעון כרגע. נסו שוב.';}
+    catch(e){if(e.message==='unknown code'){localStorage.removeItem('sync.code.v1');window.clearUserContent();error='הפרופיל לא זמין. התחברו שוב או השתמשו בשחזור.';}else if(!current)error='לא ניתן לטעון כרגע. נסו שוב.';}
     loading=false;render();
   };
   window.onboardingHtml=()=>{
     if(loading&&!current)return '<div class="onboard"><h1>Study Coach 🎀</h1><p>טוען…</p></div>';
     if(mode==='timetable')return `<form class="onboard" id="timetable-form"><h1 class="file-title">מערכת השעות 📚</h1><label>המערכת שלך<textarea name="timetable" required maxlength="12000" placeholder="יום א׳: מתמטיקה, אנגלית…">${esc(current?.timetable||'')}</textarea></label><label>המקצועות שלך<input name="subjects" required maxlength="1000" placeholder="מתמטיקה, אנגלית, היסטוריה"></label><button class="file-button" ${busy?'disabled':''}>שמירה וכניסה</button><div class="form-error">${esc(error)}</div></form>`;
-    return `<div class="onboard"><h1 class="file-title">Study Coach 🎀</h1><button class="file-button" id="new-profile" ${busy?'disabled':''}>פרופיל חדש</button><form id="join-profile"><label>יש לך קוד?<input name="code" dir="ltr" maxlength="9" autocomplete="off" placeholder="XXXX-XXXX" required></label><button class="file-button" style="margin-top:12px" ${busy?'disabled':''}>חיבור</button></form><div class="form-error">${esc(error)}</div>${error?'<button class="file-button" id="retry-profile">ניסיון נוסף</button>':''}</div>`;
+    return `<div class="onboard"><h1 class="file-title">Study Coach 🎀</h1><button class="file-button" id="new-profile" ${busy?'disabled':''}>פרופיל חדש</button><form id="join-profile"><label>יש לך קוד?<input name="code" dir="ltr" maxlength="9" autocomplete="off" placeholder="XXXX-XXXX" required></label><button class="file-button" style="margin-top:12px" ${busy?'disabled':''}>חיבור</button></form><details><summary>שחזור גישה</summary><form id="recover-profile"><label>מפתח השחזור<input name="recoveryKey" type="password" autocomplete="off" required></label><button class="file-button">שחזור</button></form></details><div class="form-error">${esc(error)}</div>${error?'<button class="file-button" id="retry-profile">ניסיון נוסף</button>':''}</div>`;
   };
   window.bindOnboarding=()=>{
+    document.getElementById('recover-profile')?.addEventListener('submit',async e=>{e.preventDefault();const recoveryKey=String(new FormData(e.target).get('recoveryKey')||'').trim();try{const j=await api('/auth/recover',{recoveryKey});const r=await enableSyncWithExistingCode(j.code);if(!r.ok)throw Error('bad');error='';}catch{error='השחזור לא הצליח. בדקו את המפתח או נסו מאוחר יותר.';}render();});
     document.getElementById('retry-profile')?.addEventListener('click',window.loadUserContent);
     document.getElementById('new-profile')?.addEventListener('click',async()=>{
       busy=true;error='';render();
@@ -62,6 +63,8 @@
   };
   window.renderPreferences=()=>{
     const picker=document.getElementById('theme-picker');if(!picker||!current)return;
+    const security=document.getElementById('security-settings');
+    if(security){security.innerHTML='<button class="file-button" id="save-recovery">שמירת מפתח שחזור</button><p class="save-state" id="recovery-status">המפתח מאפשר כניסה אם קוד החיבור אבד. שמרו אותו במקום פרטי.</p>';security.querySelector('button').addEventListener('click',async e=>{e.target.disabled=true;try{const j=await api('/auth/recovery/create',{code:code()});const blob=new Blob(['Study Coach recovery key\n'+j.recoveryKey+'\nKeep private.'],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Study-Coach-recovery.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);document.getElementById('recovery-status').textContent='המפתח החדש נשמר בקובץ. מפתח קודם בוטל.';}catch{document.getElementById('recovery-status').textContent='לא ניתן ליצור מפתח כרגע. נסו שוב.';}e.target.disabled=false;});}
     const selected=current.preferences?.theme||'pink';
     picker.innerHTML=`<div class="theme-options">${Object.entries(themes).map(([name,t])=>`<button class="theme-option" data-theme-choice="${name}" aria-pressed="${selected===name}" style="background:${t.light};color:${t.ink}">${t.label}</button>`).join('')}</div><p class="save-state" id="theme-status"></p>`;
     picker.querySelectorAll('[data-theme-choice]').forEach(b=>b.addEventListener('click',async()=>{
