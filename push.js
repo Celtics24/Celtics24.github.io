@@ -30,7 +30,7 @@ async function enableReminders() {
   const res = await fetch(`${PUSH_WORKER_URL}/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subscription: subscription.toJSON() }),
+    body: JSON.stringify({ subscription: subscription.toJSON(), code: typeof syncCode === 'function' ? syncCode() : '' }),
   });
   if (!res.ok) return { ok: false, reason: 'server' };
   return { ok: true };
