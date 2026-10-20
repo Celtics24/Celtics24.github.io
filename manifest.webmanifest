@@ -1,7 +1,7 @@
 {
   "name": "Study Coach",
   "short_name": "Study Coach",
-  "description": "אתר הסיכומים של ירדן",
+  "description": "סיכומים ולמידה אישית",
   "lang": "he",
   "dir": "rtl",
   "start_url": "./",
