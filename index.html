@@ -32,7 +32,9 @@ body{
   border-radius:24px;box-shadow:var(--ds-elevation-1);
 }
 @media (max-width:740px){ .file-card{margin:0;border-radius:0;min-height:100vh;} }
-.file-header{margin-bottom:14px}
+.file-header{margin-bottom:14px;position:relative}
+.settings-btn{position:absolute;top:0;left:0;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--pink-200);background:#fff;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;text-decoration:none;color:inherit}
+.settings-lead{font-size:13.5px;color:var(--ds-ink-2);margin:0 0 4px}
 .file-title{margin:0;font-size:28px;font-weight:800}
 .file-fact{margin-top:2px;font-size:13px;color:var(--ds-ink-2)}
 .group{margin-top:20px}
@@ -339,15 +341,20 @@ function searchResultsHtml(q){
   if(!mj.length&&!ms.length)out=`<p class="no-results">לא נמצאו תוצאות ל״${query}״</p>`;
   return out;
 }
+function settingsHtml(){
+  return `
+  <div><a href="#/" class="file-button back-link" data-variant="secondary">‹ חזרה</a></div>
+  <header class="file-header"><h1 class="file-title">הגדרות ⚙️</h1><p class="settings-lead">חיבור למכשירים אחרים והתראות</p></header>
+  <section class="group"><h2 class="group-label">חיבור בין מכשירים</h2><div id="sync-card"></div></section>
+  <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>`;
+}
 function homeHtml(){
   return `
-  <header class="file-header"><h1 class="file-title">Study Coach 🎀</h1><div class="file-fact">עודכן 20 באוקטובר</div></header>
+  <header class="file-header"><a class="settings-btn" href="#/settings" aria-label="הגדרות">⚙️</a><h1 class="file-title">Study Coach 🎀</h1><div class="file-fact">עודכן 20 באוקטובר</div></header>
   ${nextExamHtml()}
   ${sprintHtml()}
   <div class="hero-wrap hero-gap"><img src="hero.jpg" alt="דמות מצוירת מחזיקה כפכף וכתוב GO STUDY"></div>
   ${streakHtml()}
-  <div id="reminders-card"></div>
-  <div id="sync-card"></div>
   <div class="search" role="search"><span aria-hidden="true">🔎</span><input id="search-input" type="search" placeholder="חיפוש סיכום או מקצוע…" aria-label="חיפוש סיכום או מקצוע"></div>
   <div id="home-below"></div>`;
 }
@@ -386,7 +393,9 @@ let homeQuery='';
 function render(){
   const hash=location.hash||'#/';
   const m=hash.match(/^#\/subject\/([a-z]+)$/);
-  if(m){
+  if(hash==='#/settings'){
+    app.innerHTML=settingsHtml();
+  }else if(m){
     const subj=subjects.find(s=>s.key===m[1]);
     app.innerHTML=(subj?subjectPageHtml(subj):'')+`<div class="closing">הדף עודכן ב-20.10.2026</div>`;
   }else{
