@@ -15,6 +15,6 @@ id = "KV_NAMESPACE_ID_FROM_DASHBOARD"
 
 [vars]
 VAPID_PUBLIC_KEY = "BCIqAG5Og0mk5aKHL5lfLBgv13vt-3MWOc4K3sVq4_0JsUj9DrYdtxFbtGWTq4cl_l9CnxFi5igDcuMulfbcEj4"
-VAPID_SUBJECT = "mailto:y0546367987@gmail.com"
+VAPID_SUBJECT = "mailto:configure-in-dashboard@example.invalid"
 SITE_ORIGIN = "https://celtics24.github.io"
 # VAPID_PRIVATE_JWK goes in Workers secrets ONLY - never here, never in git.
