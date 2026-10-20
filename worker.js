@@ -443,7 +443,7 @@ export default {
         if (url.pathname === '/content/preferences') {
           const rec = await env.SUBS.get(`content:${hash}`, 'json');
           if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
-          if (!['pink','blue'].includes(body.theme)) return jsonResponse({ error:'bad theme' },400,env);
+          if (!['pink','blue','purple','mint','orange','dark'].includes(body.theme)) return jsonResponse({ error:'bad theme' },400,env);
           rec.content.preferences = { ...(rec.content.preferences || {}), theme:body.theme };
           const saved = await saveContent(env, hash, rec.content);
           return jsonResponse({ok:true,v:saved.v},200,env);
