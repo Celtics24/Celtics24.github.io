@@ -383,9 +383,9 @@ function examsPageHtml(){
 function homeBelowHtml(q){
   if(q&&q.trim().length>0)return searchResultsHtml(q);
   return `
-  <section class="group"><h2 class="group-label">הסיכומים שלי</h2>${summaryListHtml(summaries)}</section>
   <section class="group"><h2 class="group-label">המקצועות שלי</h2><div class="subjects">${subjects.map(subjectTileHtml).join('')}</div>
     <div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${ROOT}" target="_blank" rel="noreferrer">פתחי את כל התיקייה בדרייב</a></div></section>
+  <section class="group"><h2 class="group-label">הסיכומים שלי</h2>${summaryListHtml(summaries)}</section>
   <section class="group"><h2 class="group-label">מועצת תלמידים 🎤</h2>
     <div class="summaries">${councilItems.map(item=>`
       <div class="summary-row"><span class="summary-top"><span class="summary-chip" style="background:${item.color.bg};border-color:${item.color.border}">${item.emoji}</span>
