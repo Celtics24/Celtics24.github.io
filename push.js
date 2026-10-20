@@ -1,6 +1,6 @@
 // Study Coach - push reminder client (loads after the main script)
 // The worker URL is filled in when the Cloudflare Worker is deployed.
-const PUSH_WORKER_URL = 'https://study-coach-push.YOUR-SUBDOMAIN.workers.dev';
+const PUSH_WORKER_URL = 'https://study-coach-push.y0546367987.workers.dev';
 const VAPID_PUBLIC_KEY = 'BCIqAG5Og0mk5aKHL5lfLBgv13vt-3MWOc4K3sVq4_0JsUj9DrYdtxFbtGWTq4cl_l9CnxFi5igDcuMulfbcEj4';
 
 function pushSupported() {
