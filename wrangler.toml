@@ -18,3 +18,17 @@ VAPID_PUBLIC_KEY = "BCIqAG5Og0mk5aKHL5lfLBgv13vt-3MWOc4K3sVq4_0JsUj9DrYdtxFbtGWT
 VAPID_SUBJECT = "mailto:configure-in-dashboard@example.invalid"
 SITE_ORIGIN = "https://celtics24.github.io"
 # VAPID_PRIVATE_JWK goes in Workers secrets ONLY - never here, never in git.
+
+[ai]
+binding = "AI"
+
+[[durable_objects.bindings]]
+name = "OCR_QUOTA"
+class_name = "OcrQuota"
+
+[[migrations]]
+tag = "ocr-v1"
+new_sqlite_classes = ["OcrQuota"]
+
+# Set OCR_ENABLED=free-pilot-v1 in the dashboard only after confirming Workers Free.
+# No AI Gateway, content logs, paid plan or automatic upgrade is used.
