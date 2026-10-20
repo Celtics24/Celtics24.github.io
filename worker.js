@@ -341,6 +341,7 @@ async function accessLimit(request,env,path){
 // One global SQLite Durable Object: counters only, never photos or transcription.
 export class OcrQuota {
   constructor(state,env){this.state=state;}
+  async alarm(){await this.state.storage.deleteAll();}
   async fetch(request){
     const b=await request.json();let result;
     await this.state.storage.transaction(async tx=>{
@@ -351,7 +352,7 @@ export class OcrQuota {
       if(q.until>now){result={error:'busy'};return;}
       if(q.total>=40||(q.users[b.hash]||0)>=10){result={error:'daily limit'};return;}
       q.total++;q.users[b.hash]=(q.users[b.hash]||0)+1;q.lease=crypto.randomUUID();q.until=now+120000;
-      await tx.put('quota',q);result={ok:true,lease:q.lease};
+      await tx.put('quota',q);await tx.setAlarm(Date.parse(day+'T00:00:00Z')+86400000+120000);result={ok:true,lease:q.lease};
     });return Response.json(result);
   }
 }
@@ -372,7 +373,7 @@ async function photoText(request,env){
   let bytes;try{bytes=await boundedImage(request,4194304);}catch{return jsonResponse({error:'too large'},413,env);}
   if(bytes.length<8||!(mime==='image/jpeg'?bytes[0]===255&&bytes[1]===216:bytes[0]===137&&bytes[1]===80&&bytes[2]===78&&bytes[3]===71))return jsonResponse({error:'invalid image'},400,env);
   const quota=env.OCR_QUOTA.get(env.OCR_QUOTA.idFromName('global-v1'));
-  let granted;try{granted=await (await quota.fetch('https://quota/take',{method:'POST',body:JSON.stringify({hash})})).json();}catch{return jsonResponse({error:'quota unavailable'},503,env);}
+  let granted;try{granted=await (await quota.fetch('https://quota/take',{method:'POST',body:JSON.stringify({hash:await endpointHash(new Date().toISOString().slice(0,10)+hash)})})).json();}catch{return jsonResponse({error:'quota unavailable'},503,env);}
   if(!granted.ok)return jsonResponse({error:granted.error},429,env);
   try{
     let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
