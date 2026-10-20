@@ -178,6 +178,10 @@ body{
 :root[data-theme="dark"] .studied-toggle:not(.is-on){background:var(--ds-white);color:var(--pink-700)}
 :root[data-theme="dark"] .reminders-btn.is-on{background:var(--pink-700);color:#192536}
 :root[data-theme="dark"] :is(.form-error,.sync-error){color:#ffb7c2}
+
+.photo-panel{display:grid;gap:12px;padding:16px;border:1px solid var(--pink-200);background:var(--pink-50);border-radius:18px;margin-bottom:20px}
+.photo-panel label{display:grid;gap:6px;font-size:14px;font-weight:600}.photo-panel :is(input,select,textarea){width:100%;min-height:46px;font:inherit;padding:10px;border:1px solid var(--pink-200);border-radius:12px;background:var(--ds-white);color:var(--ds-ink)}
+.photo-panel textarea{min-height:260px;line-height:1.8;unicode-bidi:plaintext;resize:vertical}.photo-panel img{max-width:100%;max-height:280px;object-fit:contain;justify-self:center;border-radius:10px}.photo-actions{display:flex;gap:8px;flex-wrap:wrap}.photo-hint{font-size:12px;line-height:1.65;color:var(--ds-ink-2);margin:0}.photo-panel input[type=checkbox]{width:auto;min-height:0}.photo-panel .review-consent{display:flex;align-items:flex-start;gap:8px}.text-reading{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;unicode-bidi:plaintext}.photo-status{font-size:13px;color:var(--pink-700)}
 </style>
 </head>
 <body>
@@ -312,7 +316,7 @@ function summaryRowHtml(s){
   const on=!!studied[s.id];
   return `<div class="summary-row ${on?'is-studied':''}" ${on?`style="background:${s.color.bg};border-color:${s.color.border}"`:''}>
     <span class="summary-top"><span class="summary-chip" style="background:${s.color.bg};border-color:${s.color.border}">${s.emoji}</span>
-      <span class="summary-body"><a class="summary-name file-hover-wrap" href="${s.url}" target="_blank" rel="noreferrer"><span class="file-hover-underline">${s.name}</span></a>
+      <span class="summary-body"><a class="summary-name file-hover-wrap" href="${s.type==='text'?'#/text/'+s.id:s.url}" ${s.type==='text'?'':'target="_blank" rel="noreferrer"'}><span class="file-hover-underline">${s.name}</span></a>
       <span class="summary-note">${s.note}</span></span></span>
     <span class="summary-actions"><button type="button" class="studied-toggle ${on?'is-on':''}" ${on?`style="background:${s.color.accent};border-color:${s.color.accent}"`:''} data-toggle="${s.id}" aria-pressed="${on}">${on?'✓ למדתי!':'למדתי?'}</button></span>
   </div>`;
@@ -355,7 +359,7 @@ function homeHtml(){
 }
 function summariesPageHtml(){
   return `
-  <button class="file-button add-link-first" id="add-file">＋ הוספת קובץ</button><div id="add-file-form"></div>
+  <button class="file-button add-link-first" id="add-file">＋ הוספת קובץ</button><div id="add-file-form"></div><button class="file-button add-link-first" id="photo-board">📷 צילום לוח ל-PDF</button><div id="photo-workspace"></div>
   <header class="file-header"><h1 class="file-title">סיכומים 📚</h1></header>
   <div class="search" role="search"><span aria-hidden="true">🔎</span><input id="search-input" type="search" placeholder="חיפוש סיכום או מקצוע…" aria-label="חיפוש סיכום או מקצוע"></div>
   <div id="home-below"></div>`;
@@ -406,7 +410,9 @@ function render(){
   const hash=location.hash||'#/';
   const m=hash.match(/^#\/subject\/([a-z0-9]+)$/);
   const closing=`<div class="closing">Study Coach</div>`;
-  if(hash==='#/settings'){
+  if(hash.startsWith('#/text/')){
+    setTab('summaries');app.innerHTML='<div id="text-workspace"></div>';
+  }else if(hash==='#/settings'){
     setTab('settings');
     app.innerHTML=settingsHtml();
   }else if(hash==='#/exams'){
@@ -435,6 +441,7 @@ function render(){
   if(window.renderSyncCard)window.renderSyncCard();
   if(window.renderPreferences)window.renderPreferences();
   if(window.bindAddFile)window.bindAddFile();
+  if(window.bindBoardPhoto)window.bindBoardPhoto();
 }
 function bindToggles(root){
   root.querySelectorAll('[data-toggle]').forEach(btn=>{
@@ -454,8 +461,9 @@ function bindToggles(root){
 window.addEventListener('hashchange',render);
 render();
 </script>
-<script src="sync.js?v=20261020e"></script>
-<script src="content.js?v=20261020e"></script>
-<script src="push.js?v=20261020e"></script>
+<script src="sync.js?v=20261020ocr1"></script>
+<script src="content.js?v=20261020ocr1"></script>
+<script src="board.js?v=20261020ocr1"></script>
+<script src="push.js?v=20261020ocr1"></script>
 </body>
 </html>
