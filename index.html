@@ -332,7 +332,7 @@ function subjectTileHtml(s){
 }
 function searchResultsHtml(q){
   const query=q.trim();
-  const ms=summaries.filter(s=>s.name.includes(query)||s.subject.includes(query)||s.note.includes(query));
+  const ms=summaries.filter(s=>s.name.includes(query)||s.subject.includes(query)||s.note.includes(query)||(s.type==='text'&&String(s.text||'').includes(query)));
   const mj=subjects.filter(s=>s.name.includes(query));
   let out='';
   if(mj.length)out+=`<section class="group"><h2 class="group-label">מקצועות</h2><div class="subjects">${mj.map(subjectTileHtml).join('')}</div></section>`;
@@ -346,7 +346,7 @@ function settingsHtml(){
   <section class="group"><h2 class="group-label">צבע האפליקציה</h2><div id="theme-picker"></div></section><section class="group"><h2 class="group-label">אבטחת גישה</h2><div id="security-settings"></div></section><section class="group"><h2 class="group-label">מערכת השעות</h2><div id="timetable-settings"></div></section>
   <section class="group"><h2 class="group-label">חיבור בין מכשירים</h2><div id="sync-card"></div></section>
   <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>
-  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. הקבצים עצמם נשארים בדרייב ובהרשאות שלו.</p><p>קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
+  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. קבצים מקושרים נשארים בדרייב ובהרשאות שלו. סיכומי טקסט מצילום נשמרים בפרופיל. צילום לוח נשלח רק באישור לעיבוד זמני ב-Cloudflare, ללא שמירת התמונה באפליקציה או ביומני תוכן. השירות אינו משתמש בתוכן לאימון, בכפוף לחריגי אבטחה וחוק. PDF נוצר במכשיר. מוני שימוש יומיים ללא התמונה או הטקסט נשמרים בנפרד עד לאיפוס היומי (00:02 UTC).</p><p>קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
 }
 function homeHtml(){
   return `
@@ -461,9 +461,9 @@ function bindToggles(root){
 window.addEventListener('hashchange',render);
 render();
 </script>
-<script src="sync.js?v=20261020ocr2"></script>
-<script src="content.js?v=20261020ocr2"></script>
-<script src="board.js?v=20261020ocr2"></script>
-<script src="push.js?v=20261020ocr2"></script>
+<script src="sync.js?v=20261020ocr3"></script>
+<script src="content.js?v=20261020ocr3"></script>
+<script src="board.js?v=20261020ocr3"></script>
+<script src="push.js?v=20261020ocr3"></script>
 </body>
 </html>
