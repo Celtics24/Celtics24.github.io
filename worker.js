@@ -429,6 +429,17 @@ export default {
           if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
           return jsonResponse({ ok: true, v: rec.v, content: rec.content }, 200, env);
         }
+        if(url.pathname==='/content/add-link'){
+          const rec=await env.SUBS.get(`content:${hash}`,'json');
+          if(!rec)return jsonResponse({error:'no content'},404,env);
+          const title=String(body.title||'').trim();
+          const subject=rec.content.subjects.find(s=>s.key===body.subjectKey);
+          let u;try{u=new URL(body.url);}catch{return jsonResponse({error:'invalid link'},400,env);}
+          if(!title||title.length>200||!subject||u.protocol!=='https:'||!['drive.google.com','docs.google.com'].includes(u.hostname))return jsonResponse({error:'invalid link'},400,env);
+          const item={id:'link-'+crypto.randomUUID(),name:title,subject:subject.name,emoji:subject.emoji||'📄',url:u.href,note:String(body.note||'').slice(0,500),color:subject.color||'pink'};
+          rec.content.summaries.push(item);if(!validContent(rec.content))return jsonResponse({error:'content too large'},400,env);
+          const saved=await saveContent(env,hash,rec.content);return jsonResponse({ok:true,content:saved.content},200,env);
+        }
         if (url.pathname === '/content/preferences') {
           const rec = await env.SUBS.get(`content:${hash}`, 'json');
           if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
@@ -517,8 +528,25 @@ export default {
       }
 
       if (url.pathname === '/sync/destroy') {
+        const hash=key.slice(5);
+        const recovery=await env.SUBS.get(`recovery-profile:${hash}`);
+        if(recovery)await env.SUBS.delete(`recovery:${recovery}`);
+        await env.SUBS.delete(`recovery-profile:${hash}`);
+        let cursor;
+        do{
+          const page=await env.SUBS.list({cursor});
+          for(const item of page.keys){
+            if(item.name.startsWith('alias:') && await env.SUBS.get(item.name)===hash)await env.SUBS.delete(item.name);
+            if(item.name.startsWith('sub:')){const sub=await env.SUBS.get(item.name,'json');if(sub?.userHash===hash)await env.SUBS.delete(item.name);}
+          }
+          cursor=page.list_complete?undefined:page.cursor;
+        }while(cursor);
+        if(await env.SUBS.get('config:legacyProfile')===hash){
+          await env.SUBS.delete('config:legacyProfile');
+          let c;do{const page=await env.SUBS.list({prefix:'sub:',cursor:c});for(const item of page.keys){const sub=await env.SUBS.get(item.name,'json');if(!sub?.userHash)await env.SUBS.delete(item.name);}c=page.list_complete?undefined:page.cursor;}while(c);
+        }
         await env.SUBS.delete(key);
-        await env.SUBS.delete(`content:${key.slice(5)}`); // her content goes with the pairing
+        await env.SUBS.delete(`content:${hash}`);
         return jsonResponse({ ok: true }, 200, env);
       }
 
