@@ -184,19 +184,9 @@ async function runReminders(env) {
   const { day, hour } = israelNow();
   if (![7, 18, 20].includes(hour)) return; // cron covers extra hours for DST; act only on IL hours
 
-  // Exams come from per-user content in KV; exams.json is only the fallback
-  // while no user has content yet (and until it is removed from the repo).
-  let exams = await loadContentExams(env);
-  if (!exams.length) {
-    try {
-      const res = await fetch(EXAMS_URL, { cf: { cacheTtl: 300 } });
-      if (res.ok) exams = await res.json();
-    } catch (e) { /* no exams data, streak nudges still work */ }
-  }
-  const examDay = e => e.date;
-  const todayExams = exams.filter(e => examDay(e) === day);
-  const tomorrowExams = exams.filter(e => examDay(e) === shiftDay(day, 1));
-
+  let legacyExams = [];
+  try { const res = await fetch(EXAMS_URL); if (res.ok) legacyExams = await res.json(); } catch(e) {}
+  const examDay = e => e.date || `${e.y}-${pad2(e.m)}-${pad2(e.d)}`;
   let cursor;
   do {
     const page = await env.SUBS.list({ prefix: 'sub:', cursor });
@@ -204,6 +194,10 @@ async function runReminders(env) {
       const record = await env.SUBS.get(key.name, 'json');
       if (!record || !record.subscription) continue;
       const hash = key.name.slice(4);
+      const contentRecord = record.userHash ? await env.SUBS.get(`content:${record.userHash}`, 'json') : null;
+      const exams = record.userHash ? (contentRecord?.content?.exams || []) : legacyExams;
+      const todayExams = exams.filter(e => examDay(e) === day);
+      const tomorrowExams = exams.filter(e => examDay(e) === shiftDay(day, 1));
       if (hour === 7) {
         for (const ex of todayExams) await deliver(env, record, hash, day, 'exam-day', examTodayMessage(ex));
       } else if (hour === 18) {
@@ -229,7 +223,7 @@ const SYNC_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no easily-confu
 function generateSyncCode() {
   const bytes = crypto.getRandomValues(new Uint8Array(8));
   let code = '';
-  for (const b of bytes) code += SYNC_CODE_ALPHABET[b % 32];
+  for (const b of bytes) code += SYNC_CODE_ALPHABET[b % SYNC_CODE_ALPHABET.length];
   return code;
 }
 async function syncKey(code) {
@@ -347,11 +341,11 @@ export default {
     if (url.pathname === '/health') return jsonResponse({ ok: true }, 200, env);
 
     if (request.method === 'POST' && url.pathname === '/subscribe') {
-      const { subscription } = await request.json();
+      const { subscription, code } = await request.json();
       if (!subscription || !subscription.endpoint || !subscription.keys) return jsonResponse({ error: 'bad subscription' }, 400, env);
       const hash = await endpointHash(subscription.endpoint);
       const existing = (await env.SUBS.get(`sub:${hash}`, 'json')) || {};
-      await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, subscription }));
+      await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, subscription, ...(code && await env.SUBS.get(await syncKey(code)) ? { userHash: (await syncKey(code)).slice(5) } : {}) }));
       return jsonResponse({ ok: true }, 200, env);
     }
 
@@ -385,6 +379,14 @@ export default {
           const rec = await env.SUBS.get(`content:${hash}`, 'json');
           if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
           return jsonResponse({ ok: true, v: rec.v, content: rec.content }, 200, env);
+        }
+        if (url.pathname === '/content/preferences') {
+          const rec = await env.SUBS.get(`content:${hash}`, 'json');
+          if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
+          if (!['pink','blue'].includes(body.theme)) return jsonResponse({ error:'bad theme' },400,env);
+          rec.content.preferences = { ...(rec.content.preferences || {}), theme:body.theme };
+          const saved = await saveContent(env, hash, rec.content);
+          return jsonResponse({ok:true,v:saved.v},200,env);
         }
         if (url.pathname === '/content/put') {
           if (!validContent(body.content)) return jsonResponse({ error: 'bad content' }, 400, env);
@@ -431,6 +433,7 @@ export default {
           if ((await env.SUBS.get(key)) !== null) continue; // collision, draw again
           const now = new Date().toISOString();
           await env.SUBS.put(key, JSON.stringify({ v: 1, updated: now, studied: {}, days: {} }));
+          await saveContent(env, key.slice(5), { subjects:[], exams:[], summaries:[], councilItems:[], novExams:{}, timetable:'', onboardingComplete:false, preferences:{theme:'pink'} });
           return jsonResponse({ ok: true, code }, 200, env);
         }
         return jsonResponse({ error: 'try again' }, 500, env);
