@@ -62,6 +62,7 @@
     });
   };
   window.boardProfile=()=>current;
+  window.notebookMutation=async body=>{const j=await api('/content/notebook',{...body,code:code()});apply(j.content);return j;};
   window.saveBoardText=async body=>{const j=await api('/content/save-text',{...body,code:code()});apply(j.content);return j.id;};
   window.bindAddFile=()=>{
     const button=document.getElementById('add-file');if(!button||!current)return;
