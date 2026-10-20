@@ -61,8 +61,28 @@
       busy=false;render();
     });
   };
+  window.bindAddFile=()=>{
+    const button=document.getElementById('add-file');if(!button||!current)return;
+    button.addEventListener('click',()=>{
+      const box=document.getElementById('add-file-form');
+      if(!current.subjects.length){box.innerHTML='<p class="form-error">הוסיפו מקצועות דרך ההצטרפות לפני הוספת קובץ.</p>';return;}
+      box.innerHTML=`<form class="add-link-form" id="add-drive-link"><label>שם הקובץ<input name="title" required maxlength="200"></label><label>מקצוע<select name="subjectKey">${current.subjects.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join('')}</select></label><label>קישור לדרייב<input name="url" type="url" dir="ltr" required placeholder="https://drive.google.com/…"></label><label>תיאור קצר<input name="note" maxlength="500"></label><p class="save-state">מוסיפים קישור בלבד. הקובץ נשאר בדרייב; ההרשאות שלו לא משתנות.</p><button class="file-button">הוספה</button><button class="file-button" type="button" id="cancel-add">ביטול</button><div class="form-error" id="add-error"></div></form>`;
+      box.querySelector('#cancel-add').addEventListener('click',()=>{box.innerHTML='';});
+      box.querySelector('form').addEventListener('submit',async e=>{e.preventDefault();const d=new FormData(e.target);const submit=e.target.querySelector('button');submit.disabled=true;try{const j=await api('/content/add-link',{code:code(),title:d.get('title'),subjectKey:d.get('subjectKey'),url:d.get('url'),note:d.get('note')});apply(j.content);render();}catch{document.getElementById('add-error').textContent='לא נשמר. בדקו שהקישור הוא של Google Drive או Google Docs ונסו שוב.';submit.disabled=false;}});
+      box.querySelector('input').focus();
+    });
+  };
   window.renderPreferences=()=>{
     const picker=document.getElementById('theme-picker');if(!picker||!current)return;
+    const deletion=document.getElementById('delete-profile');
+    deletion?.addEventListener('click',()=>{
+      const box=document.getElementById('delete-confirm');
+      box.innerHTML='<div class="confirm-panel"><label><input type="checkbox" id="delete-consent"> הבנתי שהמחיקה קבועה ותפסיק את הסנכרון וההתראות של הפרופיל</label><button class="file-button danger" id="confirm-delete" disabled>מחיקה לצמיתות</button><button class="file-button" id="cancel-delete">ביטול</button><p class="form-error" id="delete-error"></p></div>';
+      box.querySelector('#delete-consent').addEventListener('change',e=>{box.querySelector('#confirm-delete').disabled=!e.target.checked;});
+      box.querySelector('#cancel-delete').addEventListener('click',()=>{box.innerHTML='';});
+      box.querySelector('#confirm-delete').addEventListener('click',async e=>{e.target.disabled=true;const oldCode=code();try{await api('/sync/destroy',{code:oldCode});try{if(window.disableReminders)await disableReminders();}catch{}for(const k of Object.keys(localStorage))if(k.startsWith('content.')||k.startsWith('sync.')||['studied.v1','studyDays.v1'].includes(k))localStorage.removeItem(k);store.studied={};store.days={};window.clearUserContent();location.hash='#/';render();}catch{document.getElementById('delete-error').textContent='לא ניתן למחוק כרגע. נסו שוב מאוחר יותר.';e.target.disabled=false;}});
+    });
+
     const security=document.getElementById('security-settings');
     if(security){security.innerHTML='<button class="file-button" id="save-recovery">שמירת מפתח שחזור</button><p class="save-state" id="recovery-status">המפתח מאפשר כניסה אם קוד החיבור אבד. שמרו אותו במקום פרטי.</p>';security.querySelector('button').addEventListener('click',async e=>{e.target.disabled=true;try{const j=await api('/auth/recovery/create',{code:code()});const blob=new Blob(['Study Coach recovery key\n'+j.recoveryKey+'\nKeep private.'],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Study-Coach-recovery.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);document.getElementById('recovery-status').textContent='המפתח החדש נשמר בקובץ. מפתח קודם בוטל.';}catch{document.getElementById('recovery-status').textContent='לא ניתן ליצור מפתח כרגע. נסו שוב.';}e.target.disabled=false;});}
     const selected=current.preferences?.theme||'pink';
