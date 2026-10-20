@@ -168,10 +168,8 @@ body{
 </div></nav>
 <script>
 "use strict";
-const ROOT='https://drive.google.com/drive/folders/1nc5ecwjdBMH6XlX2gfK3xN_Ta7Kt7One';
+let ROOT='', COUNCIL_ID='';
 const folder=id=>`https://drive.google.com/drive/folders/${id}`;
-const COUNCIL_ID='1q_XzfOP3iGDkiZHhQNq11ibFx8TI7Pp8';
-const SOCIO_DOC='https://docs.google.com/document/d/1DPaHkvwYI6f_52n1LXPtmdOrFM4MSsZsgAL39rMk9AI/edit';
 const PROGRESS_DAYS=3;
 const C={
   pink:{bg:'#ffe3ef',border:'#ffc9de',accent:'#c2255c'},
@@ -188,52 +186,7 @@ const C={
   green:{bg:'#ebf7e4',border:'#d3eac3',accent:'#4a7c2f'},
   peri:{bg:'#eef0ff',border:'#d8dcfb',accent:'#5a67b8'},
 };
-let subjects=[
-  {key:'psych',name:'פסיכולוגיה',emoji:'🧠',id:'1on8BT_etZSULeHtmoFyOKaUyjWDKD3Ny',color:C.lavender},
-  {key:'socio',name:'סוציולוגיה',emoji:'👥',id:'1FajQZKCv_d-ZleSC1J5dNB8mZAlZTwNI',color:C.mint},
-  {key:'math',name:'מתמטיקה',emoji:'📐',id:'1hSjw-4IQQNIwO3m8ArFUHLxW_gqRIRnF',color:C.sky},
-  {key:'english',name:'אנגלית',emoji:'🔤',id:'1Jp6bozaXNZVJKm77linIRQ85_KKxq8E3',color:C.peach},
-  {key:'lashon',name:'לשון',emoji:'✍️',id:'1Sy5YPSGpTzeh21Mxye_1GIbvzVm2ufEz',color:C.lemon},
-  {key:'tanach',name:'תנ״ך',emoji:'📖',id:'1HNOCqQsjJ-RJNUc0TtoSjXRr3MX-R8jf',color:C.sand},
-  {key:'history',name:'היסטוריה',emoji:'🏛️',id:'1jCNjM87TcqQlSnilBesehXSv5l1k2ws8',color:C.clay},
-  {key:'civics',name:'אזרחות',emoji:'⚖️',id:'1Y8FnLDW5h473m8hCPQZd7xr6Hbx-x6LW',color:C.teal},
-  {key:'physio',name:'פיזיולוגיה',emoji:'🫀',id:'1qAJqaG5A-9Cv_1GlJmq_I2xkXzguH704',color:C.rose},
-  {key:'gym',name:'חינוך גופני',emoji:'🏀',id:'1S9RHO4VYng5fkLVUZqGMnDcqHO-dEOHA',color:C.orange},
-  {key:'sport',name:'ספורט',emoji:'🏅',id:'1SJUuN-VnFmuYixbNQgjM5dDojFXr01Y1',color:C.green},
-  {key:'edu',name:'חינוך וחברה',emoji:'🌱',id:'1jjvNIXWI3xerbzs1jryBItML6Jl5xYf_',color:C.green},
-  {key:'dialog',name:'דיאלוג',emoji:'💬',id:'1bxGJBD4Q74R5nTaAgvXEK2vXlcOpzpIg',color:C.peri},
-];
-let exams=[
-  {y:2026,m:11,d:9,name:'מבחן אנגלית',time:'08:00',url:folder('1Jp6bozaXNZVJKm77linIRQ85_KKxq8E3'),color:C.peach,subject:'אנגלית'},
-  {y:2026,m:11,d:17,name:'מבחן פסיכולוגיה',url:folder('1on8BT_etZSULeHtmoFyOKaUyjWDKD3Ny'),color:C.lavender,subject:'פסיכולוגיה'},
-  {y:2026,m:11,d:17,name:'מבחן מגמות אשכול א׳'},
-  {y:2026,m:11,d:19,name:'מבחן מגמות אשכול ב׳',detail:'כולל סוציולוגיה',url:SOCIO_DOC,hasSummary:true,color:C.mint,subject:'סוציולוגיה'},
-  {y:2026,m:11,d:22,name:'מבחן היסטוריה',url:folder('1jCNjM87TcqQlSnilBesehXSv5l1k2ws8'),color:C.clay,subject:'היסטוריה'},
-  {y:2026,m:11,d:26,name:'מבחן טרום מתכונת לשון',url:folder('1Sy5YPSGpTzeh21Mxye_1GIbvzVm2ufEz'),color:C.lemon,subject:'לשון'},
-  {y:2026,m:11,d:30,name:'מבחן תנ״ך',url:folder('1HNOCqQsjJ-RJNUc0TtoSjXRr3MX-R8jf'),color:C.sand,subject:'תנ״ך'},
-  {y:2026,m:12,d:24,name:'מבחן פיזיולוגיה',detail:'מערכת הלב וכלי הדם · מסלולי הספקת אנרגיה · מערכת הנשימה',url:folder('1qAJqaG5A-9Cv_1GlJmq_I2xkXzguH704'),color:C.rose,subject:'פיזיולוגיה'},
-  {y:2027,m:5,d:5,name:'בגרות בפסיכולוגיה',url:folder('1on8BT_etZSULeHtmoFyOKaUyjWDKD3Ny'),color:C.lavender,far:true,subject:'פסיכולוגיה'},
-];
-const D=(id,name,subject,emoji,url,note,color)=>({id,name,subject,emoji,url,note,color});
-let summaries=[
-  D('1IEoznfSvMiEHB-rW1LlqdNu41uNDSj10','סיכום מבוא לפסיכולוגיה','פסיכולוגיה','🧠','https://docs.google.com/document/d/1IEoznfSvMiEHB-rW1LlqdNu41uNDSj10/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
-  D('1W8iZchj2nm97ULpTzGl9CaGeDCy_8WGw','סיכום פסיכולוגיה התפתחותית מעודכן לבגרות 2027','פסיכולוגיה','🧠','https://docs.google.com/document/d/1W8iZchj2nm97ULpTzGl9CaGeDCy_8WGw/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
-  D('1-gjTgut5yO20Z3qEPTunZLq8JXPCWrxA','סיכום רגשות ולחץ לבגרות 2027','פסיכולוגיה','🧠','https://docs.google.com/document/d/1-gjTgut5yO20Z3qEPTunZLq8JXPCWrxA/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
-  D('1bWislvCZRJi2AOksyJK2t7vmEJ3ZC_IH','סיכום קוגניטיבית בגרות 2027','פסיכולוגיה','🧠','https://docs.google.com/document/d/1bWislvCZRJi2AOksyJK2t7vmEJ3ZC_IH/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
-  D('16QsjYaSAp7ItG2XUX_uqUC82GYRsY7p4','סיכום פסיכולוגיה חברתית - בגרות 2027','פסיכולוגיה','🧠','https://docs.google.com/document/d/16QsjYaSAp7ItG2XUX_uqUC82GYRsY7p4/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פסיכולוגיה · DOCX · בגרות 2027',C.lavender),
-  D('1DPaHkvwYI6f_52n1LXPtmdOrFM4MSsZsgAL39rMk9AI','סיכום סוציולוגיה','סוציולוגיה','👥',SOCIO_DOC,'רלוונטי למבחן מגמות אשכול ב׳ · 19.11',C.mint),
-  D('1FkUa3Z_j7LNqpaCvwM5R_IArod_EeaeV','מסלולי אספקת אנרגיה - סיכום שיעור מס׳ 1','פיזיולוגיה','⚡','https://docs.google.com/document/d/1FkUa3Z_j7LNqpaCvwM5R_IArod_EeaeV/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פיזיולוגיה · DOCX',C.rose),
-  D('1AJcwclKxWUEy_D6nmoDUZmlZmYv6H-tQ','מסלולי אספקת האנרגיה - סיכום יא חנה סנש','פיזיולוגיה','⚡','https://docs.google.com/document/d/1AJcwclKxWUEy_D6nmoDUZmlZmYv6H-tQ/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פיזיולוגיה · DOCX',C.rose),
-  D('1KxGt0AeWiE4oOsbIZFY3rLx5mm4LPpi1','מערכת הלב וכלי הדם - סיכום שיעור 2026','פיזיולוגיה','🫀','https://docs.google.com/document/d/1KxGt0AeWiE4oOsbIZFY3rLx5mm4LPpi1/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','פיזיולוגיה · DOCX',C.rose),
-  D('1WVn8R3VmthunDF-vxV5jotno7B0SgU5b','Sport 2027 - נושאי הבחינה בחינוך גופני','ספורט','🏅','https://drive.google.com/file/d/1WVn8R3VmthunDF-vxV5jotno7B0SgU5b/view?usp=drivesdk&authuser=y0546367987%40gmail.com','ספורט · PDF · סמל שאלון 41381',C.green),
-  D('1vtoHFku07b0JDer265rWkn_2WxcRhSuT','סיפורי אבות - תולדות אברהם, יצחק ויעקב','תנ״ך','📖','https://docs.google.com/document/d/1vtoHFku07b0JDer265rWkn_2WxcRhSuT/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','תנ״ך · DOC · תולדות אברהם, יצחק ויעקב',C.sand),
-  D('1BFPOF-Wns9Di2WEKV9QoDRb4LY7NkvV3','חוק וחברה - ויקרא יט להיות בן אדם טוב','תנ״ך','📖','https://docs.google.com/document/d/1BFPOF-Wns9Di2WEKV9QoDRb4LY7NkvV3/edit?usp=drivesdk&ouid=101669952394645061900&rtpof=true&sd=true&authuser=y0546367987%40gmail.com','תנ״ך · DOCX · ויקרא י״ט',C.sand),
-  D('1wDBk8pVp-m-oTGnsTNL9vVaOjNmqDMkQ','תרגול פרק החוק - שאלות מהפרק השלישי בבגרות','תנ״ך','📖','https://drive.google.com/file/d/1wDBk8pVp-m-oTGnsTNL9vVaOjNmqDMkQ/view?usp=drivesdk&authuser=y0546367987%40gmail.com','תנ״ך · PDF · שאלות בגרות · פרק החוק',C.sand),
-  D('1fjQksZdOPk0iSCoRIC4hw0bikKgqUZij','תרגול בראשית יב ובראשית טו - שאלות מהפרק הראשון בבגרות','תנ״ך','📖','https://drive.google.com/file/d/1fjQksZdOPk0iSCoRIC4hw0bikKgqUZij/view?usp=drivesdk&authuser=y0546367987%40gmail.com','תנ״ך · PDF · שאלות בגרות · בראשית י״ב וט״ו',C.sand),
-];
-let councilItems=[
-  {id:'canva-rabin-2026',name:'מצגת יום הזיכרון ליצחק רבין',emoji:'🕯️',url:'https://www.canva.com/design/DAHYA7ffjg0/mVw7ntXotfh-BD8c4nyn3A/edit',note:'Canva · מצגת · 4 שקופיות',color:C.pink},
-];
+let subjects=[], exams=[], summaries=[], councilItems=[];
 const hebDays=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
 const hebMonths=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 function daysUntil(ex){const now=new Date();const today=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();const target=new Date(ex.y,ex.m-1,ex.d).getTime();return Math.round((target-today)/86400000);}
@@ -306,7 +259,7 @@ function monthWeeks(y,m){
   if(week.length){while(week.length<7)week.push(null);weeks.push(week);}
   return weeks;
 }
-let novExams={9:[{t:'אנגלית',c:C.peach}],17:[{t:'פסיכו׳',c:C.lavender},{t:'אשכול א׳',c:C.pink}],19:[{t:'אשכול ב׳',c:C.mint}],22:[{t:'היסטוריה',c:C.clay}],26:[{t:'לשון',c:C.lemon}],30:[{t:'תנ״ך',c:C.sand}]};
+let novExams={};
 function novemberHtml(){
   const weeks=monthWeeks(2026,11);
   const now=new Date();
@@ -364,7 +317,7 @@ function searchResultsHtml(q){
 function settingsHtml(){
   return `
   <header class="file-header"><h1 class="file-title">הגדרות ⚙️</h1></header>
-  <section class="group"><h2 class="group-label">צבע האפליקציה</h2><div id="theme-picker"></div></section><section class="group"><h2 class="group-label">מערכת השעות</h2><div id="timetable-settings"></div></section>
+  <section class="group"><h2 class="group-label">צבע האפליקציה</h2><div id="theme-picker"></div></section><section class="group"><h2 class="group-label">אבטחת גישה</h2><div id="security-settings"></div></section><section class="group"><h2 class="group-label">מערכת השעות</h2><div id="timetable-settings"></div></section>
   <section class="group"><h2 class="group-label">חיבור בין מכשירים</h2><div id="sync-card"></div></section>
   <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>`;
 }
@@ -428,7 +381,7 @@ function render(){
   document.getElementById("tabs").hidden=false;
   const hash=location.hash||'#/';
   const m=hash.match(/^#\/subject\/([a-z0-9]+)$/);
-  const closing=`<div class="closing">הדף עודכן ב-20.10.2026</div>`;
+  const closing=`<div class="closing">Study Coach</div>`;
   if(hash==='#/settings'){
     setTab('settings');
     app.innerHTML=settingsHtml();
@@ -476,8 +429,8 @@ function bindToggles(root){
 window.addEventListener('hashchange',render);
 render();
 </script>
-<script src="sync.js?v=20261020b"></script>
-<script src="content.js?v=20261020b"></script>
-<script src="push.js?v=20261020b"></script>
+<script src="sync.js?v=20261020c"></script>
+<script src="content.js?v=20261020c"></script>
+<script src="push.js?v=20261020c"></script>
 </body>
 </html>
