@@ -3,7 +3,7 @@
   const API='https://study-coach-push.y0546367987.workers.dev';
   let current=null, busy=false, error='', mode='welcome', loading=false;
   window.userContentReady=false;
-  const themes={pink:{label:'ורוד',light:'#ffe3ef',ink:'#c2255c'},blue:{label:'כחול',light:'#e0efff',ink:'#235b96'}};
+  const themes={pink:{label:'ורוד',light:'#ffe3ef',ink:'#c2255c'},blue:{label:'כחול',light:'#e0efff',ink:'#235b96'},purple:{label:'סגול',light:'#eee5ff',ink:'#6841a3'},mint:{label:'ירוק מנטה',light:'#def5eb',ink:'#276b52'},orange:{label:'כתום',light:'#ffecd9',ink:'#99501d'},dark:{label:'כהה',light:'#243349',ink:'#e8effb'}};
   function code(){return localStorage.getItem('sync.code.v1')||'';}
   function cacheKey(){return 'content.profile.v2:'+code();}
   async function api(path,body){const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw Error(j.error||'server');return j;}
