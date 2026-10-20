@@ -61,6 +61,8 @@
       busy=false;render();
     });
   };
+  window.boardProfile=()=>current;
+  window.saveBoardText=async body=>{const j=await api('/content/save-text',{...body,code:code()});apply(j.content);return j.id;};
   window.bindAddFile=()=>{
     const button=document.getElementById('add-file');if(!button||!current)return;
     button.addEventListener('click',()=>{
@@ -99,5 +101,5 @@
   window.clearUserContent();
   if(code()){try{const c=JSON.parse(localStorage.getItem(cacheKey())||'null');if(valid(c))apply(c);}catch(e){}}
   loading=!!code();render();window.loadUserContent();
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!document.activeElement?.matches('input,textarea'))window.loadUserContent();});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!window.boardDraftOpen&&!document.activeElement?.matches('input,textarea'))window.loadUserContent();});
 })();
