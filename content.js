@@ -34,7 +34,7 @@
   };
   window.onboardingHtml=()=>{
     if(loading&&!current)return '<div class="onboard"><h1>Study Coach</h1><p>טוען…</p></div>';
-    if(mode==='timetable')return `<form class="onboard" id="timetable-form"><h1 class="file-title">מערכת השעות</h1><label>המערכת שלך<textarea name="timetable" required maxlength="12000" placeholder="יום א׳: מתמטיקה, אנגלית…">${esc(current?.timetable||'')}</textarea></label><label>המקצועות שלך<input name="subjects" required maxlength="1000" placeholder="מתמטיקה, אנגלית, היסטוריה"></label><button class="file-button" ${busy?'disabled':''}>שמירה וכניסה</button><div class="form-error">${esc(error)}</div></form>`;
+    if(mode==='timetable')return `<form class="onboard" id="timetable-form"><h1 class="file-title">המקצועות שלך</h1><label>רשימת מקצועות<input name="subjects" required maxlength="1000" placeholder="מתמטיקה, אנגלית, היסטוריה"></label><button class="file-button" ${busy?'disabled':''}>שמירה וכניסה</button><button type="button" class="file-button" data-variant="secondary" id="onboard-back" ${busy?'disabled':''}>חזרה</button><div class="form-error">${esc(error)}</div></form>`;
     return `<div class="onboard"><h1 class="file-title">Study Coach</h1><button class="file-button" id="new-profile" ${busy?'disabled':''}>פרופיל חדש</button><form id="join-profile"><label>יש לך קוד?<input name="code" dir="ltr" maxlength="9" autocomplete="off" placeholder="XXXX-XXXX" required></label><button class="file-button" style="margin-top:12px" ${busy?'disabled':''}>חיבור</button></form><details><summary>שחזור גישה</summary><form id="recover-profile"><label>מפתח השחזור<input name="recoveryKey" type="password" autocomplete="off" required></label><button class="file-button">שחזור</button></form></details><div class="form-error">${esc(error)}</div>${error?'<button class="file-button" id="retry-profile">ניסיון נוסף</button>':''}</div>`;
   };
   window.bindOnboarding=()=>{
@@ -52,8 +52,14 @@
       catch(e){error='הקוד לא נמצא. בדקו שוב.';}
       busy=false;render();
     });
+    document.getElementById('onboard-back')?.addEventListener('click',async()=>{
+      busy=true;error='';render();
+      try{if(current&&current.onboardingComplete===false&&!(current.subjects||[]).length)await api('/sync/destroy',{code:code()});}catch(e){}
+      try{localStorage.removeItem(cacheKey());localStorage.removeItem('sync.code.v1');}catch(e){}
+      window.clearUserContent();busy=false;render();
+    });
     document.getElementById('timetable-form')?.addEventListener('submit',async e=>{
-      e.preventDefault();const d=new FormData(e.target);const timetable=String(d.get('timetable')||'').trim();const names=[...new Set(String(d.get('subjects')||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean))];if(!timetable||!names.length)return;
+      e.preventDefault();const d=new FormData(e.target);const timetable=String(current?.timetable||'');const names=[...new Set(String(d.get('subjects')||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean))];if(!names.length)return;
       const palette=['sky','mint','lavender','peach','lemon'];
       const c={...current,timetable,onboardingComplete:true,subjects:names.map((name,i)=>({key:'s'+i,name,emoji:'',color:palette[i%palette.length]}))};busy=true;error='';
       try{await api('/content/put',{code:code(),content:c});apply(c);}
