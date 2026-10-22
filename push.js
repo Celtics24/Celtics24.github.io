@@ -71,9 +71,9 @@ async function renderRemindersCard() {
   const sub = await currentSubscription();
   if (sub) {
     el.innerHTML = `<div class="reminders-card">
-      <span class="reminders-emoji" aria-hidden="true">🔔</span>
+      
       <span class="reminders-text"><span class="reminders-title">תזכורות פועלות</span>
-      <span class="reminders-sub">אשלח לך תזכורת לפני מבחנים ונשמור על הרצף 🔥</span></span>
+      <span class="reminders-sub">אשלח לך תזכורת לפני מבחנים ונשמור על הרצף</span></span>
       <button type="button" class="reminders-btn" id="reminders-toggle">כיבוי</button></div>`;
     document.getElementById('reminders-toggle').addEventListener('click', async ev => {
       ev.target.disabled = true;
@@ -82,7 +82,7 @@ async function renderRemindersCard() {
     });
   } else {
     el.innerHTML = `<div class="reminders-card">
-      <span class="reminders-emoji" aria-hidden="true">🔔</span>
+      
       <span class="reminders-text"><span class="reminders-title">רוצה תזכורות?</span>
       <span class="reminders-sub">תזכורת ערב לפני מבחן, בהצלחה בבוקר, ודחיפה עדינה לרצף</span></span>
       <button type="button" class="reminders-btn is-on" id="reminders-toggle">הפעילי</button></div>`;
@@ -90,7 +90,7 @@ async function renderRemindersCard() {
       ev.target.disabled = true;
       const result = await enableReminders();
       if (!result.ok && result.reason === 'denied') {
-        el.innerHTML = `<div class="reminders-card"><span class="reminders-emoji" aria-hidden="true">🔕</span>
+        el.innerHTML = `<div class="reminders-card">
           <span class="reminders-text"><span class="reminders-title">ההתראות חסומות</span>
           <span class="reminders-sub">אפשר לאפשר אותן בהגדרות האייפון ← Study Coach</span></span></div>`;
         return;
