@@ -3,7 +3,7 @@
   const API='https://study-coach-push.y0546367987.workers.dev';
   let current=null, busy=false, error='', mode='welcome', loading=false;
   window.userContentReady=false;
-  const themes={pink:{label:'ורוד',light:'#ffe3ef',ink:'#c2255c'},blue:{label:'כחול',light:'#e0efff',ink:'#235b96'},purple:{label:'סגול',light:'#eee5ff',ink:'#6841a3'},mint:{label:'ירוק מנטה',light:'#def5eb',ink:'#276b52'},orange:{label:'כתום',light:'#ffecd9',ink:'#99501d'},dark:{label:'כהה',light:'#243349',ink:'#e8effb'}};
+  const themes={pink:{label:'ורוד',light:'#ffe3ef',ink:'#c2255c'},blue:{label:'כחול',light:'#e0efff',ink:'#235b96'},purple:{label:'סגול',light:'#eee5ff',ink:'#6841a3'},mint:{label:'ירוק מנטה',light:'#def5eb',ink:'#276b52'},burgundy:{label:'בורדו',light:'#f8dfe4',ink:'#6d0f2b'},dark:{label:'כהה',light:'#243349',ink:'#e8effb'}};
   function code(){return localStorage.getItem('sync.code.v1')||'';}
   function cacheKey(){return 'content.profile.v2:'+code();}
   async function api(path,body){const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw Error(j.error||'server');return j;}
@@ -33,9 +33,9 @@
     loading=false;render();
   };
   window.onboardingHtml=()=>{
-    if(loading&&!current)return '<div class="onboard"><h1>Study Coach 🎀</h1><p>טוען…</p></div>';
-    if(mode==='timetable')return `<form class="onboard" id="timetable-form"><h1 class="file-title">מערכת השעות 📚</h1><label>המערכת שלך<textarea name="timetable" required maxlength="12000" placeholder="יום א׳: מתמטיקה, אנגלית…">${esc(current?.timetable||'')}</textarea></label><label>המקצועות שלך<input name="subjects" required maxlength="1000" placeholder="מתמטיקה, אנגלית, היסטוריה"></label><button class="file-button" ${busy?'disabled':''}>שמירה וכניסה</button><div class="form-error">${esc(error)}</div></form>`;
-    return `<div class="onboard"><h1 class="file-title">Study Coach 🎀</h1><button class="file-button" id="new-profile" ${busy?'disabled':''}>פרופיל חדש</button><form id="join-profile"><label>יש לך קוד?<input name="code" dir="ltr" maxlength="9" autocomplete="off" placeholder="XXXX-XXXX" required></label><button class="file-button" style="margin-top:12px" ${busy?'disabled':''}>חיבור</button></form><details><summary>שחזור גישה</summary><form id="recover-profile"><label>מפתח השחזור<input name="recoveryKey" type="password" autocomplete="off" required></label><button class="file-button">שחזור</button></form></details><div class="form-error">${esc(error)}</div>${error?'<button class="file-button" id="retry-profile">ניסיון נוסף</button>':''}</div>`;
+    if(loading&&!current)return '<div class="onboard"><h1>Study Coach</h1><p>טוען…</p></div>';
+    if(mode==='timetable')return `<form class="onboard" id="timetable-form"><h1 class="file-title">מערכת השעות</h1><label>המערכת שלך<textarea name="timetable" required maxlength="12000" placeholder="יום א׳: מתמטיקה, אנגלית…">${esc(current?.timetable||'')}</textarea></label><label>המקצועות שלך<input name="subjects" required maxlength="1000" placeholder="מתמטיקה, אנגלית, היסטוריה"></label><button class="file-button" ${busy?'disabled':''}>שמירה וכניסה</button><div class="form-error">${esc(error)}</div></form>`;
+    return `<div class="onboard"><h1 class="file-title">Study Coach</h1><button class="file-button" id="new-profile" ${busy?'disabled':''}>פרופיל חדש</button><form id="join-profile"><label>יש לך קוד?<input name="code" dir="ltr" maxlength="9" autocomplete="off" placeholder="XXXX-XXXX" required></label><button class="file-button" style="margin-top:12px" ${busy?'disabled':''}>חיבור</button></form><details><summary>שחזור גישה</summary><form id="recover-profile"><label>מפתח השחזור<input name="recoveryKey" type="password" autocomplete="off" required></label><button class="file-button">שחזור</button></form></details><div class="form-error">${esc(error)}</div>${error?'<button class="file-button" id="retry-profile">ניסיון נוסף</button>':''}</div>`;
   };
   window.bindOnboarding=()=>{
     document.getElementById('recover-profile')?.addEventListener('submit',async e=>{e.preventDefault();const recoveryKey=String(new FormData(e.target).get('recoveryKey')||'').trim();try{const j=await api('/auth/recover',{recoveryKey});const r=await enableSyncWithExistingCode(j.code);if(!r.ok)throw Error('bad');error='';}catch{error='השחזור לא הצליח. בדקו את המפתח או נסו מאוחר יותר.';}render();});
@@ -55,7 +55,7 @@
     document.getElementById('timetable-form')?.addEventListener('submit',async e=>{
       e.preventDefault();const d=new FormData(e.target);const timetable=String(d.get('timetable')||'').trim();const names=[...new Set(String(d.get('subjects')||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean))];if(!timetable||!names.length)return;
       const palette=['sky','mint','lavender','peach','lemon'];
-      const c={...current,timetable,onboardingComplete:true,subjects:names.map((name,i)=>({key:'s'+i,name,emoji:'📚',color:palette[i%palette.length]}))};busy=true;error='';
+      const c={...current,timetable,onboardingComplete:true,subjects:names.map((name,i)=>({key:'s'+i,name,emoji:'',color:palette[i%palette.length]}))};busy=true;error='';
       try{await api('/content/put',{code:code(),content:c});apply(c);}
       catch(e){error='השמירה לא הצליחה. נסו שוב.';}
       busy=false;render();
@@ -93,11 +93,11 @@
     picker.querySelectorAll('[data-theme-choice]').forEach(b=>b.addEventListener('click',async()=>{
       picker.querySelectorAll('button').forEach(x=>x.disabled=true);
       const name=b.dataset.themeChoice;const old=current.preferences?.theme||'pink';theme(name);
-      try{await api('/content/preferences',{code:code(),theme:name});current.preferences={...current.preferences,theme:name};localStorage.setItem(cacheKey(),JSON.stringify(current));window.renderPreferences();document.getElementById('theme-status').textContent='נשמר ✓';}
+      try{await api('/content/preferences',{code:code(),theme:name});current.preferences={...current.preferences,theme:name};localStorage.setItem(cacheKey(),JSON.stringify(current));window.renderPreferences();document.getElementById('theme-status').textContent='נשמר';}
       catch(e){theme(old);window.renderPreferences();document.getElementById('theme-status').textContent='לא נשמר. נסו שוב.';}
     }));
     const box=document.getElementById('timetable-settings');box.innerHTML=`<form id="edit-timetable"><textarea class="timetable-editor" name="timetable" maxlength="12000" required placeholder="מערכת השעות שלך">${esc(current.timetable||'')}</textarea><button class="file-button">שמירה</button><span class="save-state" id="timetable-status"></span></form>`;
-    box.querySelector('form').addEventListener('submit',async e=>{e.preventDefault();const timetable=String(new FormData(e.target).get('timetable')).trim();if(!timetable)return;const button=e.target.querySelector('button');button.disabled=true;try{const latest=await api('/content/get',{code:code()});const c={...latest.content,timetable};await api('/content/put',{code:code(),content:c});apply(c);document.getElementById('timetable-status').textContent=' נשמר ✓';}catch(e){document.getElementById('timetable-status').textContent=' לא נשמר. נסו שוב.';}button.disabled=false;});
+    box.querySelector('form').addEventListener('submit',async e=>{e.preventDefault();const timetable=String(new FormData(e.target).get('timetable')).trim();if(!timetable)return;const button=e.target.querySelector('button');button.disabled=true;try{const latest=await api('/content/get',{code:code()});const c={...latest.content,timetable};await api('/content/put',{code:code(),content:c});apply(c);document.getElementById('timetable-status').textContent=' נשמר';}catch(e){document.getElementById('timetable-status').textContent=' לא נשמר. נסו שוב.';}button.disabled=false;});
   };
   window.clearUserContent();
   if(code()){try{const c=JSON.parse(localStorage.getItem(cacheKey())||'null');if(valid(c))apply(c);}catch(e){}}
