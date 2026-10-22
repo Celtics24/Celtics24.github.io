@@ -256,7 +256,7 @@ function lastNotebookHtml(){
 }
 function streakHtml(){
   const {current,best}=computeStreaks(store.days);
-  return `<div class="streak-card"><span class="streak-flame" aria-hidden="true">🔥</span><span class="streak-num">${current}</span><span class="streak-text"><span class="streak-label">${current===1?'יום רצף':'ימי רצף'}</span><span class="streak-best">השיא שלך: ${best}</span></span><span class="streak-hint">יום נספר עם ״למדתי״</span></div>`;
+  return `<div class="streak-card"><span class="streak-num">${current}</span><span class="streak-text"><span class="streak-label">${current===1?'יום רצף':'ימי רצף'}</span><span class="streak-best">השיא שלך: ${best}</span></span><span class="streak-hint">יום נספר עם ״למדתי״</span></div>`;
 }
 function nextExamHtml(){
   const upcoming=exams.filter(ex=>!ex.far&&daysUntil(ex)>=0);
@@ -264,11 +264,11 @@ function nextExamHtml(){
   const min=Math.min(...upcoming.map(daysUntil));
   const sameDay=upcoming.filter(ex=>daysUntil(ex)===min);
   const first=sameDay[0];
-  return `<div class="next-exam"><span class="next-label">המבחן הקרוב 🎯</span>
-    <div class="next-count-row">${min>1?`<span class="next-num">${min}</span><span class="next-word">ימים</span>`:min===1?`<span class="next-word is-big">מחר!</span>`:`<span class="next-word is-big">היום! בהצלחה 🍀</span>`}</div>
+  return `<div class="next-exam"><span class="next-label">המבחן הקרוב</span>
+    <div class="next-count-row">${min>1?`<span class="next-num">${min}</span><span class="next-word">ימים</span>`:min===1?`<span class="next-word is-big">מחר!</span>`:`<span class="next-word is-big">היום! בהצלחה</span>`}</div>
     <span class="next-name">${sameDay.map(ex=>ex.name).join(' + ')}</span>
     <span class="next-date">${examWeekday(first)}, ${first.d} ב${hebMonths[first.m-1]}${first.time?` · ${first.time}`:''}</span>
-    ${first.url?`<a class="file-button next-link" href="${first.url}" target="_blank" rel="noreferrer">${first.hasSummary?'פתחי את הסיכום 📖':'פתחי את תיקיית המקצוע'}</a>`:''}
+    ${first.url?`<a class="file-button next-link" href="${first.url}" target="_blank" rel="noreferrer">${first.hasSummary?'פתחי את הסיכום':'פתחי את תיקיית המקצוע'}</a>`:''}
   </div>`;
 }
 function progressHtml(done,total,color){
@@ -285,7 +285,7 @@ function sprintHtml(){
     const done=list.filter(s=>studied[s.id]).length;
     const days=daysUntil(ex);
     return `<a href="#/subject/${subj.key}" class="sprint-card" style="background:${subj.color.bg};border-color:${subj.color.border}">
-      <span class="sprint-head"><span class="sprint-name">${subj.emoji} ${ex.name}</span><span class="sprint-days" style="color:${subj.color.accent}">${days===0?'היום!':days===1?'מחר!':`עוד ${days} ימים`}</span></span>
+      <span class="sprint-head"><span class="sprint-name">${ex.name}</span><span class="sprint-days" style="color:${subj.color.accent}">${days===0?'היום!':days===1?'מחר!':`עוד ${days} ימים`}</span></span>
       ${progressHtml(done,list.length,subj.color)}</a>`;
   }).join('');
   return `<section class="group"><h2 class="group-label">הספרינט האחרון ⏳</h2><div class="sprint">${cards}</div></section>`;
@@ -315,7 +315,7 @@ function examBoardHtml(){
   return `<div class="exams">${exams.map(ex=>{
     const chipStyle=ex.color?`background:${ex.color.bg};color:${ex.color.accent}`:'';
     const inner=`<span class="exam-date" style="${chipStyle}"><strong>${ex.d}</strong><span>${hebMonths[ex.m-1]}${ex.far?` ${ex.y}`:''}</span></span>
-      <span class="exam-body"><span class="exam-name">${ex.name}${ex.hasSummary?`<span class="exam-pill" style="${chipStyle}">יש סיכום ✓</span>`:''}</span>
+      <span class="exam-body"><span class="exam-name">${ex.name}${ex.hasSummary?`<span class="exam-pill" style="${chipStyle}">יש סיכום</span>`:''}</span>
       <span class="exam-meta">${examWeekday(ex)}${ex.time?` · ${ex.time}`:''}${ex.detail?` · ${ex.detail}`:''}</span></span>
       <span class="exam-count" style="${ex.color?`color:${ex.color.accent}`:''}">${countdown(ex)}</span>`;
     return ex.url
@@ -327,10 +327,10 @@ function summaryRowHtml(s){
   const studied=store.studied;
   const on=!!studied[s.id];
   return `<div class="summary-row ${on?'is-studied':''}" ${on?`style="background:${s.color.bg};border-color:${s.color.border}"`:''}>
-    <span class="summary-top"><span class="summary-chip" style="background:${s.color.bg};border-color:${s.color.border}">${s.emoji}</span>
+    <span class="summary-top">
       <span class="summary-body"><a class="summary-name file-hover-wrap" href="${s.type==='text'?'#/text/'+s.id:s.url}" ${s.type==='text'?'':'target="_blank" rel="noreferrer"'}><span class="file-hover-underline">${s.name}</span></a>
       <span class="summary-note">${s.note}</span></span></span>
-    <span class="summary-actions"><button type="button" class="studied-toggle ${on?'is-on':''}" ${on?`style="background:${s.color.accent};border-color:${s.color.accent}"`:''} data-toggle="${s.id}" aria-pressed="${on}">${on?'✓ למדתי!':'למדתי?'}</button></span>
+    <span class="summary-actions"><button type="button" class="studied-toggle ${on?'is-on':''}" ${on?`style="background:${s.color.accent};border-color:${s.color.accent}"`:''} data-toggle="${s.id}" aria-pressed="${on}">${on?'למדתי!':'למדתי?'}</button></span>
   </div>`;
 }
 function summaryListHtml(items){
@@ -339,7 +339,7 @@ function summaryListHtml(items){
 function subjectTileHtml(s){
   const count=subjectSummaries(s.name).length;
   return `<a href="#/subject/${s.key}" class="subject" style="background:${s.color.bg};border-color:${s.color.border}">
-    <span class="subject-emoji">${s.emoji}</span><span class="subject-name">${s.name}</span>
+    <span class="subject-name">${s.name}</span>
     <span class="subject-count" style="color:${s.color.accent}">${count>0?`${count} סיכומים`:'עדיין ריקה'}</span></a>`;
 }
 function searchResultsHtml(q){
@@ -354,7 +354,7 @@ function searchResultsHtml(q){
 }
 function settingsHtml(){
   return `
-  <header class="file-header"><h1 class="file-title">הגדרות ⚙️</h1></header>
+  <header class="file-header"><h1 class="file-title">הגדרות</h1></header>
   <section class="group"><h2 class="group-label">צבע האפליקציה</h2><div id="theme-picker"></div></section><section class="group"><h2 class="group-label">אבטחת גישה</h2><div id="security-settings"></div></section><section class="group"><h2 class="group-label">מערכת השעות</h2><div id="timetable-settings"></div></section>
   <section class="group"><h2 class="group-label">חיבור בין מכשירים</h2><div id="sync-card"></div></section>
   <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>
@@ -362,7 +362,7 @@ function settingsHtml(){
 }
 function homeHtml(){
   return `
-  <header class="file-header"><h1 class="file-title">Study Coach 🎀</h1><div class="file-fact">עודכן 20 באוקטובר</div></header>
+  <header class="file-header"><h1 class="file-title">Study Coach</h1><div class="file-fact">עודכן 20 באוקטובר</div></header>
   ${nextExamHtml()}
   ${sprintHtml()}
   ${lastNotebookHtml()}
@@ -371,14 +371,14 @@ function homeHtml(){
 }
 function summariesPageHtml(){
   return `
-  <button class="file-button add-link-first" id="add-file">＋ הוספת קובץ</button><div id="add-file-form"></div><button class="file-button add-link-first" id="photo-board">📷 צילום לוח ל-PDF</button><div id="photo-workspace"></div>
-  <header class="file-header"><h1 class="file-title">סיכומים 📚</h1></header>
-  <div class="search" role="search"><span aria-hidden="true">🔎</span><input id="search-input" type="search" placeholder="חיפוש סיכום או מקצוע…" aria-label="חיפוש סיכום או מקצוע"></div>
+  <button class="file-button add-link-first" id="add-file">הוספת קובץ</button><div id="add-file-form"></div><button class="file-button add-link-first" id="photo-board">צילום לוח ל-PDF</button><div id="photo-workspace"></div>
+  <header class="file-header"><h1 class="file-title">סיכומים</h1></header>
+  <div class="search" role="search"><input id="search-input" type="search" placeholder="חיפוש סיכום או מקצוע…" aria-label="חיפוש סיכום או מקצוע"></div>
   <div id="home-below"></div>`;
 }
 function examsPageHtml(){
   return `
-  <header class="file-header"><h1 class="file-title">מבחנים 📅</h1></header>
+  <header class="file-header"><h1 class="file-title">מבחנים</h1></header>
   ${nextExamHtml()}
   <section class="group"><h2 class="group-label">לוח מבחנים</h2>${examBoardHtml()}</section>
   <section class="group"><h2 class="group-label">נובמבר 2026</h2>${novemberHtml()}</section>`;
@@ -389,9 +389,9 @@ function homeBelowHtml(q){
   <section class="group"><h2 class="group-label">המקצועות שלי</h2><div class="subjects">${subjects.map(subjectTileHtml).join('')}</div>
     ${window.userHasDriveRoot?`<div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${ROOT}" target="_blank" rel="noreferrer">פתחי את כל התיקייה בדרייב</a></div>`:''}</section>
   <section class="group"><h2 class="group-label">הסיכומים שלי</h2>${summaryListHtml(summaries)}</section>
-  ${councilItems.length?`<section class="group"><h2 class="group-label">מועצת תלמידים 🎤</h2>
+  ${councilItems.length?`<section class="group"><h2 class="group-label">מועצת תלמידים</h2>
     <div class="summaries">${councilItems.map(item=>`
-      <div class="summary-row"><span class="summary-top"><span class="summary-chip" style="background:${item.color.bg};border-color:${item.color.border}">${item.emoji}</span>
+      <div class="summary-row"><span class="summary-top">
       <span class="summary-body"><a class="summary-name file-hover-wrap" href="${item.url}" target="_blank" rel="noreferrer"><span class="file-hover-underline">${item.name}</span></a>
       <span class="summary-note">${item.note}</span></span></span></div>`).join('')}</div>
     <div style="margin-top:10px"><a class="file-button" data-variant="secondary" href="${folder(COUNCIL_ID)}" target="_blank" rel="noreferrer">פתחי את תיקיית המועצה בדרייב</a></div></section>`:''}`;
@@ -403,7 +403,7 @@ function subjectPageHtml(subj){
   const exam=nextExamFor(subj.name);
   return `
   <div><a href="#/summaries" class="file-button back-link" data-variant="secondary">‹ סיכומים</a></div>
-  <div class="subject-head"><span class="subject-head-emoji" aria-hidden="true">${subj.emoji}</span><span class="subject-head-name">${subj.name}</span></div>
+  <div class="subject-head"><span class="subject-head-name">${subj.name}</span></div>
   ${exam?`<div class="subj-exam" style="background:${subj.color.bg};border-color:${subj.color.border}">
     <span class="subj-exam-name">${exam.name}</span>
     <span class="subj-exam-meta">${examWeekday(exam)}, ${exam.d} ב${hebMonths[exam.m-1]}${exam.far?` ${exam.y}`:''}${exam.time?` · ${exam.time}`:''} · ${countdown(exam)}</span></div>`:''}
@@ -417,7 +417,7 @@ function setTab(name){
   document.querySelectorAll('#tabs .tab').forEach(t=>{const on=t.getAttribute('data-tab')===name;t.classList.toggle('is-active',on);if(on)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current');});
 }
 function render(){
-  if(!window.userContentReady){app.innerHTML=window.onboardingHtml?window.onboardingHtml():'<h1 class="file-title">Study Coach 🎀</h1>';document.getElementById("tabs").hidden=true;if(window.bindOnboarding)window.bindOnboarding();return;}
+  if(!window.userContentReady){app.innerHTML=window.onboardingHtml?window.onboardingHtml():'<h1 class="file-title">Study Coach</h1>';document.getElementById("tabs").hidden=true;if(window.bindOnboarding)window.bindOnboarding();return;}
   document.getElementById("tabs").hidden=false;
   const hash=location.hash||'#/';
   const m=hash.match(/^#\/subject\/([a-z0-9]+)$/);
@@ -475,10 +475,10 @@ function bindToggles(root){
 window.addEventListener('hashchange',render);
 render();
 </script>
-<script src="sync.js?v=20261020nb1"></script>
-<script src="content.js?v=20261022th1"></script>
-<script src="board.js?v=20261020nb1"></script>
+<script src="sync.js?v=20261022em1"></script>
+<script src="content.js?v=20261022em1"></script>
+<script src="board.js?v=20261022em1"></script>
 <script src="notebooks.js?v=20261022nb2"></script>
-<script src="push.js?v=20261020nb1"></script>
+<script src="push.js?v=20261022em1"></script>
 </body>
             </html>
