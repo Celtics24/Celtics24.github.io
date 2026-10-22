@@ -37,6 +37,7 @@ body{
 .tabs-inner{pointer-events:auto;width:100%;max-width:680px;display:flex;gap:4px;background:rgb(255 255 255 / .94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1.5px solid var(--pink-200);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px))}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:16px;text-decoration:none;color:var(--ds-ink-3);font-size:11px;font-weight:700}
 .tab-ico{width:24px;height:24px;fill:none;stroke:var(--pink-600);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.tab.is-active .tab-ico{stroke:var(--pink-700)}
+.last-nb{display:flex;align-items:center;gap:14px;margin-top:14px;padding:14px 16px;border-radius:20px;border:1.5px solid var(--pink-200);background:var(--pink-50);color:var(--ds-ink);text-decoration:none}.last-nb .tab-ico{width:32px;height:32px;flex:none;stroke:var(--pink-700)}.last-nb-text{display:flex;flex-direction:column;gap:2px;min-width:0}.last-nb-text strong{font-size:17px;overflow-wrap:anywhere}.last-nb-text small{font-size:12px;color:var(--ds-ink-2)}
 .tab.is-active{color:var(--pink-700);background:var(--pink-100)}
 .page-title{margin:0 0 4px;font-size:28px;font-weight:800}
 .settings-lead{font-size:13.5px;color:var(--ds-ink-2);margin:0 0 4px}
@@ -245,6 +246,14 @@ function markStudyDay(){const d=store.days;d[todayKey()]=true;store.days=d;
   if(window.syncLocalChanged)window.syncLocalChanged();
   if(window.reportStudyDay){const {current}=computeStreaks(d);window.reportStudyDay(todayKey(),current);}}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function lastNotebookHtml(){
+  const p=window.boardProfile&&window.boardProfile(),bs=(p&&p.notebooks)||[];if(!bs.length)return '';
+  let id='';try{id=localStorage.getItem('sc-last-notebook')||'';}catch(e){}
+  const n=bs.find(b=>b.id===id)||bs.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];
+  const s=(p.subjects||[]).find(x=>x.key===n.subjectKey);
+  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return `<a class="last-nb" href="#/notebooks/${esc(n.id)}"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3.5" width="12.5" height="17" rx="2"/><path d="M6 8H3.5M6 12H3.5M6 16H3.5M10 8.5h5.5M10 12h5.5"/></svg><span class="last-nb-text"><small>המחברת האחרונה</small><strong>${esc(n.title)}</strong><small>${esc(s&&s.name||'')} · ${n.pages.length} דפים</small></span></a>`;
+}
 function streakHtml(){
   const {current,best}=computeStreaks(store.days);
   return `<div class="streak-card"><span class="streak-flame" aria-hidden="true">🔥</span><span class="streak-num">${current}</span><span class="streak-text"><span class="streak-label">${current===1?'יום רצף':'ימי רצף'}</span><span class="streak-best">השיא שלך: ${best}</span></span><span class="streak-hint">יום נספר עם ״למדתי״</span></div>`;
@@ -356,6 +365,7 @@ function homeHtml(){
   <header class="file-header"><h1 class="file-title">Study Coach 🎀</h1><div class="file-fact">עודכן 20 באוקטובר</div></header>
   ${nextExamHtml()}
   ${sprintHtml()}
+  ${lastNotebookHtml()}
   ${streakHtml()}
   `;
 }
@@ -468,7 +478,7 @@ render();
 <script src="sync.js?v=20261020nb1"></script>
 <script src="content.js?v=20261020nb1"></script>
 <script src="board.js?v=20261020nb1"></script>
-<script src="notebooks.js?v=20261020nb1"></script>
+<script src="notebooks.js?v=20261022nb2"></script>
 <script src="push.js?v=20261020nb1"></script>
 </body>
 </html>
