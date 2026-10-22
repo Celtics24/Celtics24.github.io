@@ -155,8 +155,8 @@ function renderSyncCard(force) {
 
   if (code) {
     el.innerHTML = `<div class="reminders-card sync-card">
-      <span class="reminders-emoji" aria-hidden="true">🔄</span>
-      <span class="reminders-text"><span class="reminders-title">הסנכרון פעיל ✓</span>
+      
+      <span class="reminders-text"><span class="reminders-title">הסנכרון פעיל</span>
       <span class="reminders-sub">הרצף והסימונים מתעדכנים בין המכשירים שלך</span>
       <span class="sync-code" title="הקוד לחיבור מכשיר נוסף">${prettyCode(code)}</span></span>
       <button type="button" class="reminders-btn" id="sync-unlink">ניתוק</button></div>`;
@@ -170,7 +170,7 @@ function renderSyncCard(force) {
 
   if (renderSyncCard.joinMode) {
     el.innerHTML = `<div class="reminders-card sync-card">
-      <span class="reminders-emoji" aria-hidden="true">🔄</span>
+      
       <span class="reminders-text"><span class="reminders-title">הזיני את הקוד מהמכשיר השני</span>
       <span class="sync-row"><input id="sync-code-input" class="sync-input" type="text" inputmode="latin" maxlength="9" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX" aria-label="קוד סנכרון">
       <button type="button" class="reminders-btn is-on" id="sync-join">חיבור</button></span>
@@ -188,7 +188,7 @@ function renderSyncCard(force) {
   }
 
   el.innerHTML = `<div class="reminders-card sync-card">
-    <span class="reminders-emoji" aria-hidden="true">🔄</span>
+    
     <span class="reminders-text"><span class="reminders-title">סנכרון בין מכשירים</span>
     <span class="reminders-sub">אותו רצף ואותם סימוני ״למדתי״ באייפון ובאייפד</span></span>
     <span class="sync-row"><button type="button" class="reminders-btn is-on" id="sync-start">הפעילי</button>
