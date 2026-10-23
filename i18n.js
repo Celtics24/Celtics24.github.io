@@ -122,6 +122,9 @@ const D=[
 ['התמונה מוכנה. אפשר לסובב ולחתוך לפני השליחה.','The image is ready. You can rotate and crop before sending.'],['התמונה לא נפתחה. נסי JPEG/PNG או צילום מסך.',"The image couldn't open. Try JPEG/PNG or a screenshot."],
 ['הוסיפי מקצועות לפני יצירת סיכום.','Add subjects before creating a summary.'],
 ['צילום הלוח לבדיקה','Board photo for review'],['תצוגה מקדימה של הלוח','Board preview'],['סיכום מהלוח','Board summary'],
+['שם מלא','Full name'],
+['חיפוש לפי שם מלא מדויק, רק מי שבחר להיות ניתן לחיפוש.','Search is by exact full name, and only people who chose to be searchable.'],
+['הכניסי שם מלא - שם פרטי ושם משפחה.','Enter a full name - first and last name.'],
 ];
 const SUBSTR=[
 ['השם נבחר על ידי המשתמשת ואינו מאומת. הקוד אחרי # הוא מזהה ציבורי, אפשר להשוות אותו מחוץ לאפליקציה כדי לוודא שזה האדם הנכון.',"The name is chosen by the user and is not verified. The code after # is a public identifier; compare it outside the app to make sure it's the right person."],
