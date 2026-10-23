@@ -6,7 +6,13 @@
   const themes={pink:{label:'ורוד',light:'#ffe3ef',ink:'#c2255c'},blue:{label:'כחול',light:'#e0efff',ink:'#235b96'},purple:{label:'סגול',light:'#eee5ff',ink:'#6841a3'},mint:{label:'ירוק מנטה',light:'#def5eb',ink:'#276b52'},burgundy:{label:'יין',light:'#e9d0d5',ink:'#4a0d1b'},dark:{label:'כהה',light:'#243349',ink:'#e8effb'}};
   function code(){return localStorage.getItem('sync.code.v1')||'';}
   function cacheKey(){return 'content.profile.v2:'+code();}
-  async function api(path,body){const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw Error(j.error||'server');return j;}
+  window.draftGuard={
+    key:k=>'sc-draft:'+k,
+    load(k){try{return JSON.parse(localStorage.getItem('sc-draft:'+k)||'null');}catch(e){return null;}},
+    save(k,o){try{localStorage.setItem('sc-draft:'+k,JSON.stringify({...o,at:Date.now()}));}catch(e){}},
+    clear(k){try{localStorage.removeItem('sc-draft:'+k);}catch(e){}}
+  };
+  async function api(path,body){let r;try{r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}catch(e){throw Error('אין חיבור לשרת. הטקסט נשמר כטיוטה במכשיר.');}let j={};try{j=await r.json();}catch(e){}if(!r.ok){if(r.status===503||r.status===429||r.status>=500)throw Error('השרת עמוס כרגע. הטקסט נשמר כטיוטה במכשיר, אפשר לנסות שוב מאוחר יותר.');throw Error(j.error||'server');}return j;}
   function theme(name){name=themes[name]?name:'pink';document.documentElement.dataset.theme=name;document.querySelector('meta[name="theme-color"]').content=themes[name].light;}
   function valid(c){return c&&Array.isArray(c.subjects)&&Array.isArray(c.exams)&&Array.isArray(c.summaries);}
   function apply(c){
