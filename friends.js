@@ -87,7 +87,9 @@
   async function friendPage(root,fid){
     const j=await api('/friends/profile',{fid});
     const f=j.friend;
-    const rows=(arr,kind)=>arr.length?arr.map(x=>`<div class="fr-row"><span class="fr-name">${e(x.title)}</span><button class="file-button" data-variant="secondary" type="button" data-ask="${kind}" data-ref="${e(x.ref)}">בקשת גישה</button></div>`).join(''):'<p class="save-state">אין עדיין.</p>';
+    let lst={myRequests:[]};try{lst=await api('/friends/list',{});}catch(_){}
+    const stOf=(kind,title)=>{const g=lst.myRequests.find(g=>g.who&&g.who.fid===fid&&g.kind===kind&&g.title===title&&(g.status==='pending'||g.status==='approved'));return g?g.status:'';};
+    const rows=(arr,kind)=>arr.length?arr.map(x=>{const st=stOf(kind,x.title);if(st)return `<div class="fr-row"><span class="fr-name">${e(x.title)}</span>${st==='approved'?'<a class="fr-link" href="#/friends">אושר, להוספה</a>':'<span class="save-state">ממתין לאישור</span>'}</div>`;return `<div class="fr-row"><span class="fr-name">${e(x.title)}</span><button class="file-button" data-variant="secondary" type="button" data-ask="${kind}" data-ref="${e(x.ref)}">בקשת גישה</button></div>`;}).join(''):'<p class="save-state">אין עדיין.</p>';
     root.innerHTML=`<header class="file-header"><a class="fr-back" href="#/friends">חזרה לחברים</a><h1 class="file-title">${e(f.first)} ${e(f.last)}</h1><div class="file-fact" dir="ltr">#${e(f.tag)}</div></header>
       <p class="save-state">רואים כאן רק שמות. כדי לקבל פריט צריך לבקש, והוא צריך לאשר כל פריט בנפרד.</p>
       <section class="group"><h2 class="group-label">מחברות</h2>${rows(j.notebooks,'notebook')}</section>
