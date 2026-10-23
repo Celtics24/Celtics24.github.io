@@ -10,8 +10,12 @@
  function pageForm(box,n,page){
   window.boardDraftOpen=true;
   box.innerHTML=`<form class="photo-panel nb-form" id="nb-page-form"><h2>${page?'עריכת דף':'דף חדש'}</h2><label>שם הדף<input name="title" maxlength="200" required value="${E(page?.title||'דף '+(n.pages.length+1))}"></label><label>תוכן הדף<textarea name="text" maxlength="20000" dir="auto" required>${E(page?.text||'')}</textarea></label><div class="photo-actions"><button class="file-button">שמירה במחברת</button><button type="button" class="file-button" id="nb-cancel">ביטול</button></div><p id="nb-status" role="status"></p></form>`;
-  box.querySelector('#nb-cancel').onclick=()=>{window.boardDraftOpen=false;render();};
-  box.querySelector('form').onsubmit=async e=>{e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;try{const data=new FormData(e.target);await checked(n,'save-page',{pageId:page?.id,title:data.get('title'),text:data.get('text')});window.boardDraftOpen=false;render();}catch(err){status(err.message);b.disabled=false;}};
+  const dk='nb:'+n.id+':'+(page?.id||'new'),form=box.querySelector('form'),G=window.draftGuard;
+  const saved=G&&G.load(dk);
+  if(saved&&(saved.title!==form.title.value||saved.text!==form.text.value)){form.title.value=saved.title||'';form.text.value=saved.text||'';status('שוחזרה טיוטה שלא נשמרה');}
+  form.addEventListener('input',()=>{G&&G.save(dk,{title:form.title.value,text:form.text.value});});
+  box.querySelector('#nb-cancel').onclick=()=>{G&&G.clear(dk);window.boardDraftOpen=false;render();};
+  form.onsubmit=async e=>{e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;try{const data=new FormData(e.target);G&&G.save(dk,{title:data.get('title'),text:data.get('text')});await checked(n,'save-page',{pageId:page?.id,title:data.get('title'),text:data.get('text')});G&&G.clear(dk);window.boardDraftOpen=false;render();}catch(err){status(err.message);b.disabled=false;}};
  }
  function confirmDelete(box,n,page){window.boardDraftOpen=true;box.innerHTML=`<section class="photo-panel"><h2>${page?'מחיקת דף':'מחיקת מחברת'}</h2><p>${page?'למחוק את הדף הזה?':'כל דפי המחברת יימחקו.'} לא ניתן לשחזר.</p><div class="photo-actions"><button class="file-button danger" id="nb-confirm">מחיקה לצמיתות</button><button class="file-button" id="nb-cancel">ביטול</button></div><p id="nb-status" role="status"></p></section>`;box.querySelector('#nb-cancel').onclick=()=>{window.boardDraftOpen=false;render();};box.querySelector('#nb-confirm').onclick=async e=>{e.target.disabled=true;try{await checked(n,page?'delete-page':'delete',{pageId:page?.id});window.boardDraftOpen=false;if(page)render();else location.hash='#/notebooks';}catch(err){status(err.message);e.target.disabled=false;}};}
 
