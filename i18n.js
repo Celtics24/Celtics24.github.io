@@ -193,9 +193,8 @@ function apply(){
 }
 window.setAppLanguage=l=>{
   try{localStorage.setItem(KEY,l);}catch(e){}
-  if(l==='he'){document.documentElement.lang='he';document.documentElement.dir='rtl';if(window.render)window.render();}
-  else apply();
-  window.renderLanguagePicker();
+  if(l===lang()){apply();window.renderLanguagePicker();return;}
+  location.reload();
 };
 window.renderLanguagePicker=()=>{
   const box=document.getElementById('language-picker');if(!box)return;
