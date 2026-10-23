@@ -41,6 +41,11 @@ body{
 .tab.is-active{color:var(--pink-700);background:var(--pink-100)}
 .page-title{margin:0 0 4px;font-size:28px;font-weight:800}
 .settings-lead{font-size:13.5px;color:var(--ds-ink-2);margin:0 0 4px}
+.owner-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.owner-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--pink-200);border-radius:14px;padding:10px 12px}
+.owner-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
+.owner-sub{font-size:12.5px;color:var(--ds-ink-2)}
+.owner-row .file-button{margin-top:0;white-space:nowrap;padding:8px 12px;font-size:13.5px}
 .file-title{margin:0;font-size:28px;font-weight:800}
 .file-fact{margin-top:2px;font-size:13px;color:var(--ds-ink-2)}
 .group{margin-top:20px}
@@ -371,7 +376,8 @@ function settingsHtml(){
   <section class="group"><h2 class="group-label">פרופיל</h2><div id="friends-profile"></div></section>
   <section class="group"><h2 class="group-label">הוספת חברים</h2><div id="friends-add"></div></section>
   <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>
-  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. קבצים מקושרים נשארים בדרייב ובהרשאות שלו. שם פרטי ושם משפחה שנשמרים בפרופיל נראים לאחרים רק אם בחרת להיות ניתנת לחיפוש. חברים שאישרת רואים שמות של מחברות וסיכומים בלבד, ותוכן עובר רק באישור על כל פריט, כעותק שנשאר אצל מי שקיבלה. סיכומי טקסט מצילום נשמרים בפרופיל. צילום לוח נשלח רק באישור לעיבוד זמני ב-Cloudflare, ללא שמירת התמונה באפליקציה או ביומני תוכן. השירות אינו משתמש בתוכן לאימון, בכפוף לחריגי אבטחה וחוק. PDF נוצר במכשיר. מוני שימוש יומיים ללא התמונה או הטקסט נשמרים בנפרד עד לאיפוס היומי (00:02 UTC).</p><p>קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
+  <section class="group" id="owner-group" hidden><h2 class="group-label">ניהול האפליקציה</h2><div id="owner-admin"></div></section>
+  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. קבצים מקושרים נשארים בדרייב ובהרשאות שלו. שם פרטי ושם משפחה שנשמרים בפרופיל נראים לאחרים רק אם בחרת להיות ניתנת לחיפוש. חברים שאישרת רואים שמות של מחברות וסיכומים בלבד, ותוכן עובר רק באישור על כל פריט, כעותק שנשאר אצל מי שקיבלה. סיכומי טקסט מצילום נשמרים בפרופיל. צילום לוח נשלח רק באישור לעיבוד זמני ב-Cloudflare, ללא שמירת התמונה באפליקציה או ביומני תוכן. השירות אינו משתמש בתוכן לאימון, בכפוף לחריגי אבטחה וחוק. PDF נוצר במכשיר. מוני שימוש יומיים ללא התמונה או הטקסט נשמרים בנפרד עד לאיפוס היומי (00:02 UTC).</p><p>מנהלת האפליקציה (בעלת האתר) רואה רשימת פרופילים עם שם, תאריך הצטרפות ומצב חסימה בלבד, ויכולה להשבית פרופיל; אין לה גישה לתוכן של משתמשים. קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
 }
 function homeHtml(){
   return `
@@ -472,6 +478,7 @@ function render(){
   if(window.bindAddFile)window.bindAddFile();
   if(window.bindExams)window.bindExams();
   if(window.renderFriendsSettings)window.renderFriendsSettings();
+  if(window.renderOwnerAdmin)window.renderOwnerAdmin();
   if(window.bindBoardPhoto)window.bindBoardPhoto();
 }
 function bindToggles(root){
@@ -493,11 +500,12 @@ window.addEventListener('hashchange',render);
 render();
 </script>
 <script src="sync.js?v=20261022em1"></script>
-<script src="content.js?v=20261023fr1"></script>
+<script src="content.js?v=20261023ad1"></script>
 <script src="board.js?v=20261022em1"></script>
 <script src="notebooks.js?v=20261022pd3"></script>
 <script src="exams.js?v=20261023ex1"></script>
-<script src="friends.js?v=20261023fr2"></script>
+<script src="friends.js?v=20261023fr3"></script>
+<script src="admin.js?v=20261023ad1"></script>
 <script src="push.js?v=20261022em1"></script>
 </body>
 </html>
