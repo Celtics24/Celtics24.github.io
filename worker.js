@@ -8,7 +8,7 @@
 //          POST /sync/destroy {code}
 //          POST /content/get {code}  -> her content (subjects, exams, summaries)
 //          POST /content/put {code, content}
-//          POST /admin/users|get|put {token,...}  (Instinct only; ADMIN_TOKEN secret)
+//          POST /admin/users|get|put|set-owner|push-test {token,...}  (Instinct only; ADMIN_TOKEN secret)
 //          POST /owner/status|users|block|unblock {code,...}  (app owner only; config:ownerProfile)
 // Cron:    runs several times a day; sends exam reminders and streak nudges (Israel time).
 // Secrets/vars (set in Cloudflare dashboard, NEVER in the repo):
@@ -930,6 +930,31 @@ export default {
       // admin (Instinct): token-protected; "user" is the first 10 chars of the hash, optional if only one user exists
       if (!(await adminAuthorized(env, body.token))) return jsonResponse({ error: 'forbidden' }, 403, env);
       const hashes = await listSyncHashes(env);
+      if (url.pathname === '/admin/push-test') {
+        const owner = await ownerHash(env);
+        if (!owner) return jsonResponse({ error: 'no owner set' }, 404, env);
+        const results = [];
+        let totalSubs = 0, matched = 0;
+        let cursor;
+        do {
+          const page = await env.SUBS.list({ prefix: 'sub:', cursor });
+          for (const key of page.keys) {
+            const rec = await env.SUBS.get(key.name, 'json');
+            if (!rec || !rec.subscription) continue;
+            totalSubs++;
+            if (rec.userHash !== owner) continue;
+            matched++;
+            let status;
+            try {
+              status = await sendPush(rec.subscription, { title: 'Study Coach 🎀', body: 'התראת בדיקה - אם את רואה את זה, ההתראות עובדות!', url: '/', tag: 'test-' + Date.now() }, env);
+            } catch (e) { status = 599; }
+            if (status === 404 || status === 410) await env.SUBS.delete(key.name);
+            results.push({ sub: key.name.slice(0, 12), status });
+          }
+          cursor = page.list_complete ? undefined : page.cursor;
+        } while (cursor);
+        return jsonResponse({ ok: true, owner: owner.slice(0, 10), totalSubs, matched, results }, 200, env);
+      }
       if (url.pathname === '/admin/set-owner') {
         const matches = hashes.filter(h => h.startsWith(String(body.user || '')));
         if (matches.length !== 1) return jsonResponse({ error: 'user not found or ambiguous' }, 404, env);
