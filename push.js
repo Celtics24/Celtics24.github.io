@@ -100,6 +100,22 @@ async function renderRemindersCard() {
   }
 }
 
+// Attach an already-granted subscription to the signed-in profile, so the worker
+// can route owner-only notifications. Older subscriptions predate the code field.
+// Silent: no permission prompt, no push sent - just a server-side re-save.
+(async function attachExistingSubscription() {
+  try {
+    if (!pushSupported() || typeof syncCode !== 'function' || !syncCode()) return;
+    const sub = await currentSubscription();
+    if (!sub) return;
+    await fetch(`${PUSH_WORKER_URL}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub.toJSON(), code: syncCode() }),
+    });
+  } catch (e) {}
+})();
+
 // Initial paint: the main script's first render() runs before this file loads,
 // so fill the card once here; later renders re-fill it via the render() hook.
 renderRemindersCard();
