@@ -186,6 +186,7 @@ body{
 
 .nb-cover-mark{font-size:30px;color:inherit;opacity:.65}.notebook-shelf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px;padding:12px 2px 25px}.notebook-cover{position:relative;display:flex;min-height:204px;flex-direction:column;justify-content:space-between;padding:24px 20px 20px 28px;border-radius:8px 18px 18px 8px;background:var(--cover,#eee5ff);color:#30243d;text-decoration:none;box-shadow:inset 9px 0 0 #00000012,0 7px 0 -3px #fff,0 9px 0 -3px #d6d0d6,0 13px 18px -12px #442d4b66;overflow-wrap:anywhere}.notebook-cover:before{content:'';position:absolute;left:16px;top:0;bottom:0;border-left:1px solid #ffffff80}.notebook-cover strong{font-size:19px;line-height:1.45}.notebook-cover small{font-size:12px;opacity:.8}.notebook-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:20px}.notebook-heading h1{margin:0;font-size:28px}.notebook-page{background:var(--ds-white);border:1px solid var(--pink-200);border-radius:16px;padding:18px;margin:16px 0;overflow-wrap:anywhere}.notebook-page h2{font-size:18px;margin:0 0 12px}.notebook-paper{white-space:pre-wrap;unicode-bidi:plaintext;line-height:2;background:repeating-linear-gradient(transparent,transparent 31px,var(--pink-100) 32px);padding:0 0 12px;max-height:220px;overflow:hidden}.notebook-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.notebook-tools button{min-width:44px;min-height:44px}.notebook-meta{font-size:13px;color:var(--ds-ink-2)}.notebook-empty{text-align:center;padding:35px 15px;color:var(--ds-ink-2)}.nb-form{margin:18px 0}.nb-form input,.nb-form select{max-width:100%}.tabs-inner .tab{min-width:0;padding-inline:5px;font-size:11px}@media(min-width:700px){.notebook-shelf{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .exam-item{border-bottom:1px solid var(--ds-hairline);padding-bottom:8px}.exam-item:last-child{border-bottom:0}.exam-item .exam-row{border-bottom:0;padding-bottom:6px}.exam-links-row{display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 6px}.exam-chip{font-size:12px;font-weight:600;background:var(--pink-100);color:var(--pink-700);border-radius:999px;padding:4px 10px;text-decoration:none}.exam-edit{background:none;border:0;font:inherit;font-size:12px;color:var(--ds-ink-2);padding:6px 4px;min-height:32px;cursor:pointer;text-decoration:underline}.exam-links{border:1px solid var(--pink-200);border-radius:12px;padding:10px 12px;margin:0;display:grid;gap:8px;background:transparent}.exam-links legend{font-size:14px;padding:0 6px}.add-link-form .exam-check{display:flex;align-items:center;gap:10px;font-size:14px}.add-link-form .exam-check input{width:20px;min-height:20px;height:20px;flex:none;padding:0}.exam-form .danger{margin-top:0}.cal-row{align-items:flex-start!important;flex-wrap:wrap}.cal-row span{flex:1;min-width:0}.cal-row small{color:var(--ds-ink-2)}.add-link-form .cal-row select{width:100%;min-height:40px}
+.tab{position:relative}.tab.has-badge::after{content:'';position:absolute;top:8px;inset-inline-start:calc(50% + 6px);width:9px;height:9px;border-radius:50%;background:var(--pink-700)}.fr-list{display:flex;flex-direction:column}.fr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--ds-hairline);text-decoration:none;color:inherit}.fr-col{flex-direction:column;align-items:stretch}.fr-name{font-weight:600;font-size:14px;color:var(--ds-ink)}.fr-tag{font-size:11px;color:var(--ds-ink-3);font-weight:600}.fr-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.fr-actions .file-button{min-height:40px;padding:0 14px}.fr-link{background:none;border:0;font:inherit;font-size:13px;color:var(--ds-ink-2);text-decoration:underline;min-height:40px;cursor:pointer}.fr-back{font-size:13px;color:var(--ds-ink-2)}.fr-actions select{min-height:40px;border-radius:12px;border:1px solid var(--pink-200);padding:0 8px;font:inherit;background:#fff;color:var(--ds-ink)}:root[data-theme="dark"] .fr-actions select{background:var(--ds-white);color:var(--ds-ink)}.onboard .onboard-check{display:flex;align-items:center;gap:10px;font-size:14px}.onboard .onboard-check input{width:22px;min-height:22px;height:22px;padding:0;flex:none}
 </style>
 </head>
 <body>
@@ -195,6 +196,7 @@ body{
 <a class="tab" data-tab="summaries" href="#/summaries"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="4.5" height="15" rx="1"/><rect x="10.5" y="4.5" width="4.5" height="15" rx="1"/><path d="m16.8 6.2 3.4 1-3.6 12-3.2-1"/></svg>סיכומים</a>
 <a class="tab" data-tab="notebooks" href="#/notebooks"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3.5" width="12.5" height="17" rx="2"/><path d="M6 8H3.5M6 12H3.5M6 16H3.5M10 8.5h5.5M10 12h5.5"/></svg>מחברות</a>
 <a class="tab" data-tab="exams" href="#/exams"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>מבחנים</a>
+<a class="tab" data-tab="friends" href="#/friends"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9.5" r="2.3"/><path d="M16.2 14.3c2.4.2 4.3 1.8 4.3 4.7"/></svg>חברים</a>
 <a class="tab" data-tab="settings" href="#/settings"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.4M12 18.1v2.4M3.5 12h2.4M18.1 12h2.4M6 6l1.7 1.7M16.3 16.3 18 18M6 18l1.7-1.7M16.3 7.7 18 6"/></svg>הגדרות</a>
 </div></nav>
 <script>
@@ -366,9 +368,10 @@ function settingsHtml(){
   <header class="file-header"><h1 class="file-title">הגדרות</h1></header>
   <section class="group"><h2 class="group-label">צבע האפליקציה</h2><div id="theme-picker"></div></section><section class="group"><h2 class="group-label">אבטחת גישה</h2><div id="security-settings"></div></section><section class="group"><h2 class="group-label">מערכת השעות</h2><div id="timetable-settings"></div></section>
   <section class="group"><h2 class="group-label">חיבור בין מכשירים</h2><div id="sync-card"></div></section>
-  <section class="group"><h2 class="group-label">יומן גוגל</h2><div id="calendar-card"></div></section>
+  <section class="group"><h2 class="group-label">פרופיל</h2><div id="friends-profile"></div></section>
+  <section class="group"><h2 class="group-label">הוספת חברים</h2><div id="friends-add"></div></section>
   <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>
-  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. קבצים מקושרים נשארים בדרייב ובהרשאות שלו. ייבוא מבחנים מיומן גוגל (אם יופעל) קורא אירועים בקריאה בלבד בלחיצה שלך, לא שומר אותם ולא שומר אישור גישה, ושומר רק מבחנים שאישרת. סיכומי טקסט מצילום נשמרים בפרופיל. צילום לוח נשלח רק באישור לעיבוד זמני ב-Cloudflare, ללא שמירת התמונה באפליקציה או ביומני תוכן. השירות אינו משתמש בתוכן לאימון, בכפוף לחריגי אבטחה וחוק. PDF נוצר במכשיר. מוני שימוש יומיים ללא התמונה או הטקסט נשמרים בנפרד עד לאיפוס היומי (00:02 UTC).</p><p>קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
+  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. קבצים מקושרים נשארים בדרייב ובהרשאות שלו. שם פרטי ושם משפחה שנשמרים בפרופיל נראים לאחרים רק אם בחרת להיות ניתנת לחיפוש. חברים שאישרת רואים שמות של מחברות וסיכומים בלבד, ותוכן עובר רק באישור על כל פריט, כעותק שנשאר אצל מי שקיבלה. סיכומי טקסט מצילום נשמרים בפרופיל. צילום לוח נשלח רק באישור לעיבוד זמני ב-Cloudflare, ללא שמירת התמונה באפליקציה או ביומני תוכן. השירות אינו משתמש בתוכן לאימון, בכפוף לחריגי אבטחה וחוק. PDF נוצר במכשיר. מוני שימוש יומיים ללא התמונה או הטקסט נשמרים בנפרד עד לאיפוס היומי (00:02 UTC).</p><p>קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
 }
 function homeHtml(){
   return `
@@ -432,7 +435,9 @@ function render(){
   const hash=location.hash||'#/';
   const m=hash.match(/^#\/subject\/([a-z0-9]+)$/);
   const closing=`<div class="closing">Study Coach</div>`;
-  if(hash.startsWith('#/notebooks')){
+  if(hash.startsWith('#/friends')){
+    setTab('friends');app.innerHTML='<div id="friends-workspace"></div>';if(window.renderFriends)window.renderFriends();
+  }else if(hash.startsWith('#/notebooks')){
     setTab('notebooks');app.innerHTML='<div id="notebook-workspace"></div>';if(window.renderNotebooks)window.renderNotebooks();
   }else if(hash.startsWith('#/text/')){
     setTab('summaries');app.innerHTML='<div id="text-workspace"></div>';
@@ -466,7 +471,7 @@ function render(){
   if(window.renderPreferences)window.renderPreferences();
   if(window.bindAddFile)window.bindAddFile();
   if(window.bindExams)window.bindExams();
-  if(window.renderCalendarCard)window.renderCalendarCard();
+  if(window.renderFriendsSettings)window.renderFriendsSettings();
   if(window.bindBoardPhoto)window.bindBoardPhoto();
 }
 function bindToggles(root){
@@ -488,11 +493,11 @@ window.addEventListener('hashchange',render);
 render();
 </script>
 <script src="sync.js?v=20261022em1"></script>
-<script src="content.js?v=20261022pd1"></script>
+<script src="content.js?v=20261023fr1"></script>
 <script src="board.js?v=20261022em1"></script>
 <script src="notebooks.js?v=20261022pd3"></script>
 <script src="exams.js?v=20261023ex1"></script>
-<script src="calendar.js?v=20261023cal1"></script>
+<script src="friends.js?v=20261023fr1"></script>
 <script src="push.js?v=20261022em1"></script>
 </body>
 </html>
