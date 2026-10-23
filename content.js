@@ -29,7 +29,7 @@
     if(!code()){window.clearUserContent();render();return;}
     loading=true;
     try{const j=await api('/content/get',{code:code()});if(valid(j.content)){apply(j.content);error='';}}
-    catch(e){if(e.message==='unknown code'){localStorage.removeItem('sync.code.v1');window.clearUserContent();error='הפרופיל לא זמין. התחברו שוב או השתמשו בשחזור.';}else if(!current)error='לא ניתן לטעון כרגע. נסו שוב.';}
+    catch(e){if(e.message==='blocked'){error='הפרופיל הושבת על ידי מנהלת האפליקציה.';}else if(e.message==='unknown code'){localStorage.removeItem('sync.code.v1');window.clearUserContent();error='הפרופיל לא זמין. התחברו שוב או השתמשו בשחזור.';}else if(!current)error='לא ניתן לטעון כרגע. נסו שוב.';}
     loading=false;render();
   };
   window.onboardingHtml=()=>{
