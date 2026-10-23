@@ -34,7 +34,7 @@
   };
   window.onboardingHtml=()=>{
     if(loading&&!current)return '<div class="onboard"><h1>Study Coach</h1><p>טוען…</p></div>';
-    if(mode==='timetable')return `<form class="onboard" id="timetable-form"><h1 class="file-title">המקצועות שלך</h1><label>רשימת מקצועות<input name="subjects" required maxlength="1000" placeholder="מתמטיקה, אנגלית, היסטוריה"></label><button class="file-button" ${busy?'disabled':''}>שמירה וכניסה</button><button type="button" class="file-button" data-variant="secondary" id="onboard-back" ${busy?'disabled':''}>חזרה</button><div class="form-error">${esc(error)}</div></form>`;
+    if(mode==='timetable')return `<form class="onboard" id="timetable-form"><h1 class="file-title">המקצועות שלך</h1><label>שם פרטי<input name="first" required minlength="2" maxlength="30" autocomplete="off"></label><label>שם משפחה<input name="last" required minlength="2" maxlength="30" autocomplete="off"></label><label class="onboard-check"><input type="checkbox" name="disc"> אפשר לאחרים למצוא אותי לפי שם מלא</label><label>רשימת מקצועות<input name="subjects" required maxlength="1000" placeholder="מתמטיקה, אנגלית, היסטוריה"></label><button class="file-button" ${busy?'disabled':''}>שמירה וכניסה</button><button type="button" class="file-button" data-variant="secondary" id="onboard-back" ${busy?'disabled':''}>חזרה</button><div class="form-error">${esc(error)}</div></form>`;
     return `<div class="onboard"><h1 class="file-title">Study Coach</h1><button class="file-button" id="new-profile" ${busy?'disabled':''}>פרופיל חדש</button><form id="join-profile"><label>יש לך קוד?<input name="code" dir="ltr" maxlength="9" autocomplete="off" placeholder="XXXX-XXXX" required></label><button class="file-button" style="margin-top:12px" ${busy?'disabled':''}>חיבור</button></form><details><summary>שחזור גישה</summary><form id="recover-profile"><label>מפתח השחזור<input name="recoveryKey" type="password" autocomplete="off" required></label><button class="file-button">שחזור</button></form></details><div class="form-error">${esc(error)}</div>${error?'<button class="file-button" id="retry-profile">ניסיון נוסף</button>':''}</div>`;
   };
   window.bindOnboarding=()=>{
@@ -60,6 +60,7 @@
     });
     document.getElementById('timetable-form')?.addEventListener('submit',async e=>{
       e.preventDefault();const d=new FormData(e.target);const timetable=String(current?.timetable||'');const names=[...new Set(String(d.get('subjects')||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean))];if(!names.length)return;
+      try{await api('/friends/set-profile',{code:code(),first:String(d.get('first')||''),last:String(d.get('last')||''),discoverable:d.get('disc')==='on'});}catch(err){e.target.querySelector('.form-error').textContent=err.message==='invalid name'?'השם יכול להכיל אותיות, רווח, גרש ומקף, 2 עד 30 תווים.':'שמירת השם לא הצליחה. נסו שוב.';return;}
       const palette=['sky','mint','lavender','peach','lemon'];
       const c={...current,timetable,onboardingComplete:true,subjects:names.map((name,i)=>({key:'s'+i,name,emoji:'',color:palette[i%palette.length]}))};busy=true;error='';
       try{await api('/content/put',{code:code(),content:c});apply(c);}
