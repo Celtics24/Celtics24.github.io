@@ -88,7 +88,7 @@ const D=[
 ['המחברות שלי','My notebooks'],['‹ המחברות שלי','‹ My notebooks'],['מחברת חדשה','New notebook'],['יצירת מחברת','Create notebook'],['צבע הכריכה','Cover color'],
 ['המחברת הראשונה שלך מתחילה כאן','Your first notebook starts here'],['יצירת מחברות לפי המקצועות','Create notebooks from subjects'],
 ['＋ מחברת','＋ Notebook'],['📷 צילום דף','📷 Photo page'],['＋ דף טקסט','＋ Text page'],['הוספת סיכום','Add summary'],['הוספת PDF','Add PDF'],['PDF למחברת','Notebook PDF'],
-['פתיחה ועריכה','Open & edit'],['מחיקה','Delete'],['אפשרויות מחברת','Notebook options'],['אפשרויות','Options'],['שינוי שם','Rename'],['מחיקת המחברת','Delete notebook'],
+['פתיחה ועריכה','Open & edit'],['מחיקה','Delete'],['אפשרויות מחברת','Notebook options'],['אפשרויות','Options'],['כל המחברות','All notebooks'],['שינוי שם','Rename'],['מחיקת המחברת','Delete notebook'],
 ['עוד פעולות','More actions'],
 ['דף חדש','New page'],['עריכת דף','Edit page'],['שם הדף','Page title'],['תוכן הדף','Page content'],['שמירה במחברת','Save to notebook'],
 ['מחיקת דף','Delete page'],['למחוק את הדף הזה?','Delete this page?'],['כל דפי המחברת יימחקו.','All notebook pages will be deleted.'],['לא ניתן לשחזר.','This cannot be undone.'],
