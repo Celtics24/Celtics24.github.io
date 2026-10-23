@@ -192,8 +192,9 @@ function apply(){
   if(l==='en')translateTree(document.body);
 }
 window.setAppLanguage=l=>{
+  const cur=lang();
   try{localStorage.setItem(KEY,l);}catch(e){}
-  if(l===lang()){apply();window.renderLanguagePicker();return;}
+  if(l===cur){apply();window.renderLanguagePicker();return;}
   location.reload();
 };
 window.renderLanguagePicker=()=>{
