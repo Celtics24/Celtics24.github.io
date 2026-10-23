@@ -185,6 +185,7 @@ body{
 .photo-panel textarea{min-height:260px;line-height:1.8;unicode-bidi:plaintext;resize:vertical}.photo-panel img{max-width:100%;max-height:280px;object-fit:contain;justify-self:center;border-radius:10px}.photo-actions{display:flex;gap:8px;flex-wrap:wrap}.photo-hint{font-size:12px;line-height:1.65;color:var(--ds-ink-2);margin:0}.photo-panel input[type=checkbox]{width:auto;min-height:0}.photo-panel .review-consent{display:flex;align-items:flex-start;gap:8px}.text-reading{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;unicode-bidi:plaintext}.photo-status{font-size:13px;color:var(--pink-700)}
 
 .nb-cover-mark{font-size:30px;color:inherit;opacity:.65}.notebook-shelf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px;padding:12px 2px 25px}.notebook-cover{position:relative;display:flex;min-height:204px;flex-direction:column;justify-content:space-between;padding:24px 20px 20px 28px;border-radius:8px 18px 18px 8px;background:var(--cover,#eee5ff);color:#30243d;text-decoration:none;box-shadow:inset 9px 0 0 #00000012,0 7px 0 -3px #fff,0 9px 0 -3px #d6d0d6,0 13px 18px -12px #442d4b66;overflow-wrap:anywhere}.notebook-cover:before{content:'';position:absolute;left:16px;top:0;bottom:0;border-left:1px solid #ffffff80}.notebook-cover strong{font-size:19px;line-height:1.45}.notebook-cover small{font-size:12px;opacity:.8}.notebook-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:20px}.notebook-heading h1{margin:0;font-size:28px}.notebook-page{background:var(--ds-white);border:1px solid var(--pink-200);border-radius:16px;padding:18px;margin:16px 0;overflow-wrap:anywhere}.notebook-page h2{font-size:18px;margin:0 0 12px}.notebook-paper{white-space:pre-wrap;unicode-bidi:plaintext;line-height:2;background:repeating-linear-gradient(transparent,transparent 31px,var(--pink-100) 32px);padding:0 0 12px;max-height:220px;overflow:hidden}.notebook-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.notebook-tools button{min-width:44px;min-height:44px}.notebook-meta{font-size:13px;color:var(--ds-ink-2)}.notebook-empty{text-align:center;padding:35px 15px;color:var(--ds-ink-2)}.nb-form{margin:18px 0}.nb-form input,.nb-form select{max-width:100%}.tabs-inner .tab{min-width:0;padding-inline:5px;font-size:11px}@media(min-width:700px){.notebook-shelf{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.exam-item{border-bottom:1px solid var(--ds-hairline);padding-bottom:8px}.exam-item:last-child{border-bottom:0}.exam-item .exam-row{border-bottom:0;padding-bottom:6px}.exam-links-row{display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 6px}.exam-chip{font-size:12px;font-weight:600;background:var(--pink-100);color:var(--pink-700);border-radius:999px;padding:4px 10px;text-decoration:none}.exam-edit{background:none;border:0;font:inherit;font-size:12px;color:var(--ds-ink-2);padding:6px 4px;min-height:32px;cursor:pointer;text-decoration:underline}.exam-links{border:1px solid var(--pink-200);border-radius:12px;padding:10px 12px;margin:0;display:grid;gap:8px;background:transparent}.exam-links legend{font-size:14px;padding:0 6px}.add-link-form .exam-check{display:flex;align-items:center;gap:10px;font-size:14px}.add-link-form .exam-check input{width:20px;min-height:20px;height:20px;flex:none;padding:0}.exam-form .danger{margin-top:0}
 </style>
 </head>
 <body>
@@ -281,7 +282,8 @@ function sprintHtml(){
   if(!inWindow.length)return '';
   const cards=inWindow.map(ex=>{
     const subj=subjects.find(s=>s.name===ex.subject);
-    const list=subjectSummaries(ex.subject);
+    const linked=(ex.summaryIds||[]).map(id=>summaries.find(x=>x.id===id)).filter(Boolean);
+    const list=linked.length?linked:subjectSummaries(ex.subject);
     const done=list.filter(s=>studied[s.id]).length;
     const days=daysUntil(ex);
     return `<a href="#/subject/${subj.key}" class="sprint-card" style="background:${subj.color.bg};border-color:${subj.color.border}">
@@ -311,16 +313,23 @@ function novemberHtml(){
   }).join('')}</div>`).join('');
   return `<div class="month" role="table" aria-label="יומן נובמבר 2026"><div class="month-head" role="row">${head}</div>${body}</div>`;
 }
+function examLinksHtml(ex){
+  const ids=ex.summaryIds||[];if(!ids.length)return '';
+  const list=ids.map(id=>summaries.find(s=>s.id===id)).filter(Boolean);if(!list.length)return '';
+  return `<span class="exam-links-row">${list.map(s=>`<a class="exam-chip" href="${s.type==='text'?'#/text/'+s.id:s.url}" ${s.type==='text'?'':'target="_blank" rel="noreferrer"'}>${s.name}</a>`).join('')}</span>`;
+}
 function examBoardHtml(){
-  return `<div class="exams">${exams.map(ex=>{
+  const sorted=exams.map((ex,i)=>({ex,i})).sort((a,b)=>new Date(a.ex.y,a.ex.m-1,a.ex.d)-new Date(b.ex.y,b.ex.m-1,b.ex.d));
+  return `<div class="exams">${sorted.map(({ex,i})=>{
     const chipStyle=ex.color?`background:${ex.color.bg};color:${ex.color.accent}`:'';
     const inner=`<span class="exam-date" style="${chipStyle}"><strong>${ex.d}</strong><span>${hebMonths[ex.m-1]}${ex.far?` ${ex.y}`:''}</span></span>
       <span class="exam-body"><span class="exam-name">${ex.name}${ex.hasSummary?`<span class="exam-pill" style="${chipStyle}">יש סיכום</span>`:''}</span>
       <span class="exam-meta">${examWeekday(ex)}${ex.time?` · ${ex.time}`:''}${ex.detail?` · ${ex.detail}`:''}</span></span>
       <span class="exam-count" style="${ex.color?`color:${ex.color.accent}`:''}">${countdown(ex)}</span>`;
-    return ex.url
+    const row=ex.url
       ?`<a class="exam-row file-hover-wrap" href="${ex.url}" target="_blank" rel="noreferrer"><span class="file-hover-underline exam-flex">${inner}</span></a>`
       :`<div class="exam-row"><span class="exam-flex">${inner}</span></div>`;
+    return `<div class="exam-item">${row}${examLinksHtml(ex)}<button type="button" class="exam-edit" data-exam-edit="${i}">עריכה</button></div>`;
   }).join('')}</div>`;
 }
 function summaryRowHtml(s){
@@ -380,7 +389,7 @@ function examsPageHtml(){
   return `
   <header class="file-header"><h1 class="file-title">מבחנים</h1></header>
   ${nextExamHtml()}
-  <section class="group"><h2 class="group-label">לוח מבחנים</h2>${examBoardHtml()}</section>
+  <section class="group"><h2 class="group-label">לוח מבחנים</h2><button class="file-button add-link-first" id="exam-add" type="button">הוספת מבחן</button><div id="exam-form-box"></div>${examBoardHtml()}</section>
   <section class="group"><h2 class="group-label">נובמבר 2026</h2>${novemberHtml()}</section>`;
 }
 function homeBelowHtml(q){
@@ -455,6 +464,7 @@ function render(){
   if(window.renderSyncCard)window.renderSyncCard();
   if(window.renderPreferences)window.renderPreferences();
   if(window.bindAddFile)window.bindAddFile();
+  if(window.bindExams)window.bindExams();
   if(window.bindBoardPhoto)window.bindBoardPhoto();
 }
 function bindToggles(root){
@@ -479,6 +489,7 @@ render();
 <script src="content.js?v=20261022pd1"></script>
 <script src="board.js?v=20261022em1"></script>
 <script src="notebooks.js?v=20261022pd3"></script>
+<script src="exams.js?v=20261023ex1"></script>
 <script src="push.js?v=20261022em1"></script>
 </body>
 </html>
