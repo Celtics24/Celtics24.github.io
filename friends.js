@@ -8,7 +8,7 @@
   let me=null, meLoaded=false;
   async function loadMe(){try{const j=await api('/friends/me',{});me=j.profile;meLoaded=true;window.friendsPending=j.pending||{incoming:0,itemRequests:0};}catch(err){me=null;meLoaded=false;}badge();return me;}
   function badge(){const t=document.querySelector('#tabs .tab[data-tab="friends"]');if(!t)return;const n=(window.friendsPending&&(window.friendsPending.incoming+window.friendsPending.itemRequests))||0;t.classList.toggle('has-badge',n>0);}
-  function errText(err){return err.status===429?'יותר מדי ניסיונות. נסי שוב בעוד כמה דקות.':err.status===404||err.message==='Failed to fetch'?'השרת לא זמין כרגע.':'לא הצליח. נסי שוב.';}
+  function errText(err){return err.message==='blocked'?'הפרופיל הושבת על ידי מנהלת האפליקציה.':err.status===429?'יותר מדי ניסיונות. נסי שוב בעוד כמה דקות.':err.status===404||err.message==='Failed to fetch'?'השרת לא זמין כרגע.':'לא הצליח. נסי שוב.';}
   const NOTE='השם נבחר על ידי המשתמשת ואינו מאומת. הקוד אחרי # הוא מזהה ציבורי, אפשר להשוות אותו מחוץ לאפליקציה כדי לוודא שזה האדם הנכון.';
   const SETTINGS_NOTE='רק שם וקוד ציבורי נחשפים בחיפוש. אחרי שחבר מאשר, הוא יכול לראות רק שמות של מחברות וסיכומים, לא תוכן. תוכן עובר רק אחרי אישור על כל פריט, והעותק נשאר אצל מי שקיבלה גם אם מסירים חבר.';
 
