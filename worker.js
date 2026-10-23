@@ -9,6 +9,7 @@
 //          POST /content/get {code}  -> her content (subjects, exams, summaries)
 //          POST /content/put {code, content}
 //          POST /admin/users|get|put {token,...}  (Instinct only; ADMIN_TOKEN secret)
+//          POST /owner/status|users|block|unblock {code,...}  (app owner only; config:ownerProfile)
 // Cron:    runs several times a day; sends exam reminders and streak nudges (Israel time).
 // Secrets/vars (set in Cloudflare dashboard, NEVER in the repo):
 //   VAPID_PRIVATE_JWK (secret) - VAPID private key as JWK JSON
@@ -321,6 +322,29 @@ async function listSyncHashes(env) {
 }
 
 
+async function ownerHash(env){const v=await env.SUBS.get('config:ownerProfile');return typeof v==='string'&&v?v:null;}
+async function notifyOwnerNewUser(env,first,last){
+  try{
+    const owner=await ownerHash(env);if(!owner)return;
+    const name=`${first} ${last}`;
+    const results=[];
+    let cursor;
+    do{
+      const page=await env.SUBS.list({prefix:'sub:',cursor});
+      for(const key of page.keys){
+        const rec=await env.SUBS.get(key.name,'json');
+        if(!rec||!rec.subscription||rec.userHash!==owner)continue;
+        let status=0;
+        try{status=await sendPush(rec.subscription,{title:'משתמש חדש ב-Study Coach 🎀',body:'מישהי הצטרפה עכשיו. הפרטים בניהול האפליקציה.',url:'/#/settings',tag:'owner-new-'+Date.now()},env);}catch(e){status=599;}
+        results.push(status);
+        if(status===404||status===410)await env.SUBS.delete(key.name);
+      }
+      cursor=page.list_complete?undefined:page.cursor;
+    }while(cursor);
+    await env.SUBS.put('config:lastOwnerNotify',JSON.stringify({at:new Date().toISOString(),name,results}));
+  }catch(e){}
+}
+
 async function profileKey(env,code){const key=await syncKey(code);const canonical=await env.SUBS.get(`alias:${key.slice(5)}`);return canonical?`sync:${canonical}`:key;}
 // KV counters are best-effort across locations. Local counters cover bursts per isolate.
 const accessCounters=new Map();
@@ -366,7 +390,9 @@ async function photoText(request,env){
   const code=request.headers.get('X-Profile-Code')||'';
   if(!/^[A-Za-z2-9]{8}$/.test(code))return jsonResponse({error:'bad code'},401,env);
   const hash=(await profileKey(env,code)).slice(5);
-  if(!await env.SUBS.get(`sync:${hash}`))return jsonResponse({error:'unknown code'},401,env);
+  const syncRecO=await env.SUBS.get(`sync:${hash}`,'json');
+  if(!syncRecO)return jsonResponse({error:'unknown code'},401,env);
+  if(syncRecO.blocked)return jsonResponse({error:'blocked'},403,env);
   if(!env.AI||!env.OCR_QUOTA||env.OCR_ENABLED!=='free-pilot-v1')return jsonResponse({error:'not enabled'},503,env);
   const mime=request.headers.get('Content-Type');if(!['image/jpeg','image/png'].includes(mime))return jsonResponse({error:'image type'},400,env);
   if(Number(request.headers.get('Content-Length')||0)>4194304)return jsonResponse({error:'too large'},413,env);
@@ -496,7 +522,9 @@ async function handleFriends(request, env, url) {
   const code = typeof body.code === 'string' ? body.code.trim() : '';
   if (!/^[A-Za-z2-9]{8}$/.test(code)) return jsonResponse({ error: 'bad code' }, 400, env);
   const hash = (await profileKey(env, code)).slice(5);
-  if ((await env.SUBS.get(`sync:${hash}`)) === null) return jsonResponse({ error: 'unknown code' }, 404, env);
+  const syncRecF = await env.SUBS.get(`sync:${hash}`, 'json');
+  if (syncRecF === null) return jsonResponse({ error: 'unknown code' }, 404, env);
+  if (syncRecF.blocked) return jsonResponse({ error: 'blocked' }, 403, env);
   const path = url.pathname;
   const ip = await endpointHash(request.headers.get('CF-Connecting-IP') || 'unknown');
   const bad = (m, s = 400) => jsonResponse({ error: m }, s, env);
@@ -509,6 +537,7 @@ async function handleFriends(request, env, url) {
     if (!first || !last) return bad('invalid name');
     if (typeof body.discoverable !== 'boolean') return bad('discoverable required');
     const nameKey = await frNameKey(first, last);
+    let created = false;
     let s = me;
     if (s) {
       if (s.discoverable) await frIndexRemove(env, s.nameKey, s.fid);
@@ -517,10 +546,12 @@ async function handleFriends(request, env, url) {
       let fid; for (let i = 0; i < 6; i++) { fid = frRandom(12); if (!(await env.SUBS.get(`fid:${fid}`))) break; fid = null; }
       if (!fid) return bad('try again', 503);
       s = { fid, first, last, discoverable: body.discoverable, consentAt: new Date().toISOString(), nameKey };
+      created = true;
       await env.SUBS.put(`fid:${fid}`, hash);
     }
     await env.SUBS.put(`social:${hash}`, JSON.stringify(s));
     if (s.discoverable) await frIndexAdd(env, nameKey, s.fid);
+    if (created) await notifyOwnerNewUser(env, first, last);
     return ok({ profile: { ...frPub(s.fid, s), discoverable: s.discoverable } });
   }
   if (path === '/friends/me') {
@@ -687,7 +718,7 @@ async function handleFriends(request, env, url) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if(request.method==='POST' && (url.pathname.startsWith('/sync/') || url.pathname.startsWith('/content/') || url.pathname.startsWith('/auth/'))) {
+    if(request.method==='POST' && (url.pathname.startsWith('/sync/') || url.pathname.startsWith('/content/') || url.pathname.startsWith('/auth/') || url.pathname.startsWith('/owner/'))) {
       if(Number(request.headers.get('Content-Length')||0)>220000)return jsonResponse({error:'too large'},413,env);
       const limited=await accessLimit(request,env,url.pathname);
       if(limited)return jsonResponse({error:'too many attempts',retryAfter:900},429,env);
@@ -706,7 +737,9 @@ export default {
       if (!subscription || !subscription.endpoint || !subscription.keys) return jsonResponse({ error: 'bad subscription' }, 400, env);
       const hash = await endpointHash(subscription.endpoint);
       const existing = (await env.SUBS.get(`sub:${hash}`, 'json')) || {};
-      await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, subscription, ...(code && await env.SUBS.get(await profileKey(env,code)) ? { userHash: (await profileKey(env,code)).slice(5) } : {}) }));
+      let attachHash = null;
+      if (code) { const pk = await profileKey(env, code); const rec = await env.SUBS.get(pk, 'json'); if (rec && !rec.blocked) attachHash = pk.slice(5); }
+      await env.SUBS.put(`sub:${hash}`, JSON.stringify({ ...existing, subscription, ...(attachHash ? { userHash: attachHash } : {}) }));
       return jsonResponse({ ok: true }, 200, env);
     }
 
@@ -751,6 +784,57 @@ export default {
       return jsonResponse({error:'not found'},404,env);
     }
 
+    if (url.pathname.startsWith('/owner/')) {
+      if (request.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405, env);
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonResponse({ error: 'bad json' }, 400, env); }
+      const code = typeof body.code === 'string' ? body.code.trim() : '';
+      if (!/^[A-Za-z2-9]{8}$/.test(code)) return jsonResponse({ error: 'bad code' }, 400, env);
+      const hash = (await profileKey(env, code)).slice(5);
+      const owner = await ownerHash(env);
+      const isOwner = !!(owner && hash === owner);
+      if (url.pathname === '/owner/status') {
+        const lastNotify = isOwner ? await env.SUBS.get('config:lastOwnerNotify', 'json') : null;
+        return jsonResponse({ ok: true, owner: isOwner, lastNotify }, 200, env);
+      }
+      if (!isOwner) return jsonResponse({ error: 'forbidden' }, 403, env);
+      const hashes = await listSyncHashes(env);
+      if (url.pathname === '/owner/users') {
+        const users = [];
+        for (const h of hashes) {
+          const rec = await env.SUBS.get(`sync:${h}`, 'json');
+          const social = await frGetSocial(env, h);
+          users.push({
+            user: h.slice(0, 10),
+            name: social ? `${social.first} ${social.last}` : null,
+            tag: social ? frTag(social.fid) : null,
+            created: (rec && rec.created) || (social && social.consentAt) || null,
+            blocked: !!(rec && rec.blocked),
+            self: h === hash,
+          });
+        }
+        users.sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+        return jsonResponse({ ok: true, users }, 200, env);
+      }
+      if (url.pathname === '/owner/block' || url.pathname === '/owner/unblock') {
+        const target = hashes.find(h => h.startsWith(String(body.user || '')));
+        if (!target) return jsonResponse({ error: 'user not found' }, 404, env);
+        if (target === hash) return jsonResponse({ error: 'cannot block own profile' }, 400, env);
+        const rec = (await env.SUBS.get(`sync:${target}`, 'json')) || { v: 0 };
+        const social = await frGetSocial(env, target);
+        if (url.pathname === '/owner/block') {
+          rec.blocked = true; rec.blockedAt = new Date().toISOString();
+          if (social && social.discoverable) await frIndexRemove(env, social.nameKey, social.fid);
+        } else {
+          delete rec.blocked; delete rec.blockedAt;
+          if (social && social.discoverable) await frIndexAdd(env, social.nameKey, social.fid);
+        }
+        await env.SUBS.put(`sync:${target}`, JSON.stringify(rec));
+        return jsonResponse({ ok: true, blocked: url.pathname === '/owner/block' }, 200, env);
+      }
+      return jsonResponse({ error: 'not found' }, 404, env);
+    }
+
     if (url.pathname.startsWith('/content/') || url.pathname.startsWith('/admin/')) {
       if (request.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405, env);
       let body;
@@ -760,7 +844,9 @@ export default {
         const code = typeof body.code === 'string' ? body.code.trim() : '';
         if (!/^[A-Za-z2-9]{8}$/.test(code)) return jsonResponse({ error: 'bad code' }, 400, env);
         const hash = (await profileKey(env,code)).slice(5);
-        if ((await env.SUBS.get(`sync:${hash}`)) === null) return jsonResponse({ error: 'unknown code' }, 404, env);
+        const syncRecC = await env.SUBS.get(`sync:${hash}`, 'json');
+        if (syncRecC === null) return jsonResponse({ error: 'unknown code' }, 404, env);
+        if (syncRecC.blocked) return jsonResponse({ error: 'blocked' }, 403, env);
         if (url.pathname === '/content/get') {
           const rec = await env.SUBS.get(`content:${hash}`, 'json');
           if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
@@ -844,6 +930,12 @@ export default {
       // admin (Instinct): token-protected; "user" is the first 10 chars of the hash, optional if only one user exists
       if (!(await adminAuthorized(env, body.token))) return jsonResponse({ error: 'forbidden' }, 403, env);
       const hashes = await listSyncHashes(env);
+      if (url.pathname === '/admin/set-owner') {
+        const matches = hashes.filter(h => h.startsWith(String(body.user || '')));
+        if (matches.length !== 1) return jsonResponse({ error: 'user not found or ambiguous' }, 404, env);
+        await env.SUBS.put('config:ownerProfile', matches[0]);
+        return jsonResponse({ ok: true, user: matches[0].slice(0, 10) }, 200, env);
+      }
       if (url.pathname === '/admin/migrate-legacy') {
         if(!body.user || !hashes.some(h=>h.startsWith(body.user)))return jsonResponse({error:'unknown user'},400,env);
         await env.SUBS.put('config:legacyProfile',hashes.find(h=>h.startsWith(body.user)));
@@ -882,7 +974,7 @@ export default {
           const key = await syncKey(code);
           if ((await env.SUBS.get(key)) !== null) continue; // collision, draw again
           const now = new Date().toISOString();
-          await env.SUBS.put(key, JSON.stringify({ v: 1, updated: now, studied: {}, days: {} }));
+          await env.SUBS.put(key, JSON.stringify({ v: 1, updated: now, created: now, studied: {}, days: {} }));
           await saveContent(env, key.slice(5), { subjects:[], exams:[], summaries:[], councilItems:[], novExams:{}, timetable:'', onboardingComplete:false, preferences:{theme:'pink'} });
           return jsonResponse({ ok: true, code }, 200, env);
         }
@@ -896,18 +988,20 @@ export default {
       if (url.pathname === '/sync/pull') {
         const record = await env.SUBS.get(key, 'json');
         if (!record) return jsonResponse({ error: 'unknown code' }, 404, env);
+        if (record.blocked) return jsonResponse({ error: 'blocked' }, 403, env);
         return jsonResponse({ ok: true, record }, 200, env);
       }
 
       if (url.pathname === '/sync/push') {
         const existing = await env.SUBS.get(key, 'json');
         if (!existing) return jsonResponse({ error: 'unknown code' }, 404, env);
+        if (existing.blocked) return jsonResponse({ error: 'blocked' }, 403, env);
         const now = new Date().toISOString();
         const merged = mergeSyncState(
           { studied: normalizeStudied(existing.studied, now), days: normalizeDays(existing.days) },
           { studied: normalizeStudied(body.studied, now), days: normalizeDays(body.days) },
         );
-        const record = { v: (existing.v || 0) + 1, updated: now, ...merged };
+        const record = { ...existing, v: (existing.v || 0) + 1, updated: now, ...merged };
         await env.SUBS.put(key, JSON.stringify(record));
         return jsonResponse({ ok: true, record }, 200, env);
       }
