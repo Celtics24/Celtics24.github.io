@@ -142,6 +142,7 @@ function translateString(s){
     for(const [he,en] of SUBSTR)out=out.split(he).join(en);
     out=out.replace(new RegExp('^עודכן (\\d{1,2}) ב('+MO_RE+')$'),(m,d,mo)=>'Updated '+MONTHS[mo]+' '+d);
     out=out.replace(/יום ([א-ת])׳/g,(m,g)=>WD[g]||m);
+    out=out.replace(/^([א-ת])׳$/,(m,g)=>WD[g]||m);
     out=out.replace(new RegExp('(\\d{1,2}) ב('+MO_RE+')','g'),(m,d,mo)=>MONTHS[mo]+' '+d);
     out=out.replace(new RegExp('^(\\d{1,2}) ('+MO_RE+')( \\d{4})?$'),(m,d,mo,y)=>MONTHS[mo]+' '+d+(y||''));
     out=out.replace(new RegExp('^('+MO_RE+')( \\d{4})$'),(m,mo,y)=>MONTHS[mo]+y);
@@ -168,11 +169,11 @@ const SKIP='.summary-name,.summary-note,.subject-name,.exam-name,.subj-exam-name
 function translateNode(node){
   if(node.nodeType===3){const v=translateString(node.nodeValue);if(v!==node.nodeValue)node.nodeValue=v;return;}
   if(node.nodeType!==1)return;
-  if(node.matches(SKIP))return;
   for(const attr of ['placeholder','aria-label','title','alt']){
     const v=node.getAttribute&&node.getAttribute(attr);
     if(v&&/[א-ת]/.test(v)){const t=translateString(v);if(t!==v)node.setAttribute(attr,t);}
   }
+  if(node.matches(SKIP))return;
   for(const child of node.childNodes)translateNode(child);
 }
 function translateTree(root){
