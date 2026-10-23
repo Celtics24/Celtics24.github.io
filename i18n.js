@@ -89,6 +89,7 @@ const D=[
 ['המחברת הראשונה שלך מתחילה כאן','Your first notebook starts here'],['יצירת מחברות לפי המקצועות','Create notebooks from subjects'],
 ['＋ מחברת','＋ Notebook'],['📷 צילום דף','📷 Photo page'],['＋ דף טקסט','＋ Text page'],['הוספת סיכום','Add summary'],['הוספת PDF','Add PDF'],['PDF למחברת','Notebook PDF'],
 ['פתיחה ועריכה','Open & edit'],['מחיקה','Delete'],['אפשרויות מחברת','Notebook options'],['שינוי שם','Rename'],['מחיקת המחברת','Delete notebook'],
+['עוד פעולות','More actions'],
 ['דף חדש','New page'],['עריכת דף','Edit page'],['שם הדף','Page title'],['תוכן הדף','Page content'],['שמירה במחברת','Save to notebook'],
 ['מחיקת דף','Delete page'],['למחוק את הדף הזה?','Delete this page?'],['כל דפי המחברת יימחקו.','All notebook pages will be deleted.'],['לא ניתן לשחזר.','This cannot be undone.'],
 ['הוספת סיכום למחברת','Add summary to notebook'],['סיכום','Summary'],['אין עדיין סיכומים להוספה.','No summaries to add yet.'],['הוספה למחברת','Add to notebook'],
@@ -168,7 +169,7 @@ function translateString(s){
   return lead+out+trail;
 }
 // Elements whose text is user content - never translated, even on a dictionary match.
-const SKIP='.summary-name,.summary-note,.subject-name,.exam-name,.subj-exam-name,.sprint-name,.next-name,.month-exam,.exam-chip,.notebook-cover strong,.notebook-paper,.notebook-page h2,.last-nb-text strong,.owner-meta strong,.fr-tag,input,textarea,script,style';
+const SKIP='.summary-name,.summary-note,.subject-name,.exam-name,.subj-exam-name,.sprint-name,.next-name,.month-exam,.exam-chip,.notebook-cover strong,.notebook-paper,.nb-page-title,.last-nb-text strong,.owner-meta strong,.fr-tag,input,textarea,script,style';
 function translateNode(node){
   if(node.nodeType===3){const v=translateString(node.nodeValue);if(v!==node.nodeValue)node.nodeValue=v;return;}
   if(node.nodeType!==1)return;
