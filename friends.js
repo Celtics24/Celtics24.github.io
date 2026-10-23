@@ -44,7 +44,7 @@
     const out=box.querySelector('#fr-results');
     box.querySelector('form').addEventListener('submit',async ev=>{ev.preventDefault();const f=ev.target,b=f.querySelector('button');b.disabled=true;out.innerHTML='';
       try{const j=await api('/friends/search',{first:f.first.value,last:f.last.value});
-        out.innerHTML=j.results.length?`<div class="fr-list">${j.results.map(r=>`<div class="fr-row"><span class="fr-name">${who(r)}</span>${r.status==='sent'?'<span class="save-state">נשלחה בקשה</span>':r.status==='incoming'?'<span class="save-state">שלחו לך בקשה, ראי בדף חברים</span>':`<button class="file-button" data-variant="secondary" type="button" data-req="${e(r.fid)}">בקשת חברות</button>`}</div>`).join('')}</div><p class="save-state">${NOTE}</p>`:'<p class="save-state">לא נמצא. בדקי איות, או שהאדם לא בחר להיות ניתן לחיפוש.</p>';
+        out.innerHTML=j.results.length?`<div class="fr-list">${j.results.map(r=>`<div class="fr-row"><span class="fr-name">${who(r)}</span>${r.status==='sent'?'<span class="save-state">נשלחה בקשה</span>':r.status==='incoming'?'<span class="save-state">שלחו לך בקשה, מופיעה למטה</span>':`<button class="file-button" data-variant="secondary" type="button" data-req="${e(r.fid)}">בקשת חברות</button>`}</div>`).join('')}</div><p class="save-state">${NOTE}</p>`:'<p class="save-state">לא נמצא. בדקי איות, או שהאדם לא בחר להיות ניתן לחיפוש.</p>';
         out.querySelectorAll('[data-req]').forEach(bt=>bt.addEventListener('click',async()=>{bt.disabled=true;try{await api('/friends/request',{fid:bt.dataset.req});bt.outerHTML='<span class="save-state">נשלחה בקשה</span>';}catch(err){bt.disabled=false;out.insertAdjacentHTML('beforeend',`<p class="form-error">${errText(err)}</p>`);}}));
       }catch(err){out.innerHTML=`<p class="form-error">${err.message==='invalid name'?'הכניסי שם פרטי ושם משפחה תקינים.':errText(err)}</p>`;}
       b.disabled=false;});
@@ -76,9 +76,11 @@
     const out=j.outgoing.map(p=>`<div class="fr-row"><span class="fr-name">${who(p)}</span><span class="save-state">ממתין לאישור</span></div>`).join('');
     const blocked=j.blocked.map(p=>`<div class="fr-row"><span class="fr-name">${who(p)}</span><button class="fr-link" type="button" data-act="unblock" data-fid="${e(p.fid)}">ביטול חסימה</button></div>`).join('');
     root.innerHTML=`<header class="file-header"><h1 class="file-title">חברים</h1></header>
+      <section class="group"><h2 class="group-label">הוספת חברים</h2><div id="friends-add-page"></div></section>
       ${sec('בקשות חברות',incoming)}${sec('בקשות לפריטים שלי',reqIn)}${sec('מה ביקשתי',mine)}
-      <section class="group"><h2 class="group-label">החברים שלי</h2>${friends||'<p class="save-state">עוד אין חברים. אפשר להוסיף בהגדרות.</p>'}<a class="file-button add-link-first" data-variant="secondary" href="#/settings" style="margin-top:12px">הוספת חברים</a></section>
+      <section class="group"><h2 class="group-label">החברים שלי</h2>${friends||'<p class="save-state">עוד אין חברים.</p>'}</section>
       ${sec('בקשות שנשלחו',out)}${sec('חסומים',blocked)}<div id="fr-msg" class="form-error"></div>`;
+    paintAdd(root.querySelector('#friends-add-page'));
     const msg=t=>{root.querySelector('#fr-msg').textContent=t;};
     root.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',async()=>{b.disabled=true;try{await api('/friends/respond',{fid:b.dataset.fid,action:b.dataset.act});renderFriends();}catch(err){msg(errText(err));b.disabled=false;}}));
     root.querySelectorAll('[data-gact]').forEach(b=>b.addEventListener('click',async()=>{b.disabled=true;try{await api('/friends/item-decide',{id:b.dataset.gid,action:b.dataset.gact});renderFriends();}catch(err){msg(errText(err));b.disabled=false;}}));
