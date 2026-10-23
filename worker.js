@@ -405,6 +405,285 @@ function jsonResponse(obj, status, env) {
   });
 }
 
+// ---------- Friends (names, discoverability, requests, title-only profiles, per-item approvals) ----------
+// Records (all separate from content:<hash>, so /content/put can never overwrite or forge them):
+//   social:<hash>  {fid, first, last, discoverable, consentAt, nameKey}
+//   fid:<fid>      -> hash (private reverse lookup)
+//   name:<nameKey> -> [fid]   (only discoverable people)
+//   fr:<hash>      {friends, inc, out, blocked, declined, gin, gout, day}
+//   gr:<id>        item grant {id, owner, req, kind, ref, title, status, created, exp}
+const FR_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const FR_NAME_RE = /^[\p{L}](?:[\p{L} '\-]{0,28}[\p{L}])$/u;
+const FR_MAX_OUT = 20, FR_MAX_INC = 50, FR_DAY_REQUESTS = 30, FR_GRANT_DAYS = 7, FR_OUT_DAYS = 30, FR_DECLINE_DAYS = 30;
+const frNorm = s => String(s == null ? '' : s).normalize('NFKC').replace(/\s+/g, ' ').trim();
+async function frNameKey(first, last) {
+  const d = await crypto.subtle.digest('SHA-256', te.encode(frNorm(first).toLocaleLowerCase('he') + '|' + frNorm(last).toLocaleLowerCase('he')));
+  return 'name:' + bytesToB64u(d);
+}
+function frValidName(s) { s = frNorm(s); return s.length >= 2 && s.length <= 30 && FR_NAME_RE.test(s) ? s : null; }
+function frRandom(n) { const b = crypto.getRandomValues(new Uint8Array(n)); let o = ''; for (const x of b) o += FR_ALPHABET[x % FR_ALPHABET.length]; return o; }
+const frTag = fid => String(fid).slice(-4);
+const frPub = (fid, s) => ({ fid, tag: frTag(fid), first: s.first, last: s.last });
+async function frLimit(env, id, group, max) {
+  const key = `limit:fr:${group}:${id}:${Math.floor(Date.now() / 900000)}`;
+  const n = Number(await env.SUBS.get(key) || 0) + 1;
+  if (n > max) return true;
+  await env.SUBS.put(key, String(n), { expirationTtl: 1800 });
+  return false;
+}
+async function frGetSocial(env, hash) { return await env.SUBS.get(`social:${hash}`, 'json'); }
+async function frGetFr(env, hash) {
+  const r = (await env.SUBS.get(`fr:${hash}`, 'json')) || {};
+  const now = Date.now();
+  const f = { friends: r.friends || [], inc: r.inc || [], out: (r.out || []).filter(x => now - Date.parse(x.at) < FR_OUT_DAYS * 86400000), blocked: r.blocked || [], declined: (r.declined || []).filter(x => Date.parse(x.until) > now), gin: r.gin || [], gout: r.gout || [], day: r.day || { d: '', n: 0 } };
+  return f;
+}
+async function frPutFr(env, hash, f) { await env.SUBS.put(`fr:${hash}`, JSON.stringify(f)); }
+async function frByFid(env, fid) {
+  if (typeof fid !== 'string' || !/^[A-Z2-9]{12}$/.test(fid)) return null;
+  const hash = await env.SUBS.get(`fid:${fid}`);
+  if (!hash) return null;
+  const social = await frGetSocial(env, hash);
+  return social ? { hash, social } : null;
+}
+async function frIndexAdd(env, nameKey, fid) {
+  const list = (await env.SUBS.get(nameKey, 'json')) || [];
+  if (!list.includes(fid) && list.length < 50) list.push(fid);
+  await env.SUBS.put(nameKey, JSON.stringify(list));
+}
+async function frIndexRemove(env, nameKey, fid) {
+  const list = ((await env.SUBS.get(nameKey, 'json')) || []).filter(x => x !== fid);
+  if (list.length) await env.SUBS.put(nameKey, JSON.stringify(list)); else await env.SUBS.delete(nameKey);
+}
+function frAreFriends(a, bFid) { return a.friends.includes(bFid); }
+async function frRemoveEdge(env, hashA, fidA, hashB, fidB) {
+  // remove every trace of A<->B relation (friends, requests) from both records; revoke open grants between them
+  for (const [h, other] of [[hashA, fidB], [hashB, fidA]]) {
+    const f = await frGetFr(env, h);
+    f.friends = f.friends.filter(x => x !== other); f.inc = f.inc.filter(x => x.fid !== other); f.out = f.out.filter(x => x.fid !== other);
+    for (const gid of [...f.gin, ...f.gout]) {
+      const g = await env.SUBS.get(`gr:${gid}`, 'json');
+      if (g && ((g.owner === fidA && g.req === fidB) || (g.owner === fidB && g.req === fidA)) && (g.status === 'pending' || g.status === 'approved')) { g.status = 'revoked'; await env.SUBS.put(`gr:${gid}`, JSON.stringify(g), { expirationTtl: 30 * 86400 }); }
+    }
+    await frPutFr(env, h, f);
+  }
+}
+async function frPurge(env, hash) {
+  const s = await frGetSocial(env, hash);
+  if (!s) { await env.SUBS.delete(`fr:${hash}`); return; }
+  const f = await frGetFr(env, hash);
+  const others = new Set([...f.friends, ...f.inc.map(x => x.fid), ...f.out.map(x => x.fid)]);
+  for (const fid of others) { const o = await frByFid(env, fid); if (o) await frRemoveEdge(env, hash, s.fid, o.hash, fid); }
+  for (const gid of [...f.gin, ...f.gout]) { const g = await env.SUBS.get(`gr:${gid}`, 'json'); if (g && (g.owner === s.fid || g.req === s.fid)) await env.SUBS.delete(`gr:${gid}`); }
+  if (s.discoverable) await frIndexRemove(env, s.nameKey, s.fid);
+  await env.SUBS.delete(`fid:${s.fid}`); await env.SUBS.delete(`social:${hash}`); await env.SUBS.delete(`fr:${hash}`);
+}
+async function frGrantsFor(env, f, ids, meFid, side) {
+  const out = []; const now = Date.now();
+  for (const gid of ids.slice(-60).reverse()) {
+    const g = await env.SUBS.get(`gr:${gid}`, 'json'); if (!g) continue;
+    let st = g.status; if ((st === 'pending' || st === 'approved') && Date.parse(g.exp) < now) st = 'expired';
+    const other = await frByFid(env, side === 'owner' ? g.req : g.owner);
+    if (!other) continue;
+    out.push({ id: g.id, kind: g.kind, title: g.title, status: st, exp: g.exp, who: frPub(side === 'owner' ? g.req : g.owner, other.social), isLink: g.isLink === true });
+  }
+  return out;
+}
+async function handleFriends(request, env, url) {
+  if (request.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405, env);
+  if (Number(request.headers.get('Content-Length') || 0) > 20000) return jsonResponse({ error: 'too large' }, 413, env);
+  let body; try { body = await request.json(); } catch { return jsonResponse({ error: 'bad json' }, 400, env); }
+  const code = typeof body.code === 'string' ? body.code.trim() : '';
+  if (!/^[A-Za-z2-9]{8}$/.test(code)) return jsonResponse({ error: 'bad code' }, 400, env);
+  const hash = (await profileKey(env, code)).slice(5);
+  if ((await env.SUBS.get(`sync:${hash}`)) === null) return jsonResponse({ error: 'unknown code' }, 404, env);
+  const path = url.pathname;
+  const ip = await endpointHash(request.headers.get('CF-Connecting-IP') || 'unknown');
+  const bad = (m, s = 400) => jsonResponse({ error: m }, s, env);
+  const ok = (o = {}) => jsonResponse({ ok: true, ...o }, 200, env);
+  const me = await frGetSocial(env, hash);
+
+  if (path === '/friends/set-profile') {
+    if (await frLimit(env, hash, 'setp', 10)) return bad('too many attempts', 429);
+    const first = frValidName(body.first), last = frValidName(body.last);
+    if (!first || !last) return bad('invalid name');
+    if (typeof body.discoverable !== 'boolean') return bad('discoverable required');
+    const nameKey = await frNameKey(first, last);
+    let s = me;
+    if (s) {
+      if (s.discoverable) await frIndexRemove(env, s.nameKey, s.fid);
+      s = { ...s, first, last, discoverable: body.discoverable, nameKey };
+    } else {
+      let fid; for (let i = 0; i < 6; i++) { fid = frRandom(12); if (!(await env.SUBS.get(`fid:${fid}`))) break; fid = null; }
+      if (!fid) return bad('try again', 503);
+      s = { fid, first, last, discoverable: body.discoverable, consentAt: new Date().toISOString(), nameKey };
+      await env.SUBS.put(`fid:${fid}`, hash);
+    }
+    await env.SUBS.put(`social:${hash}`, JSON.stringify(s));
+    if (s.discoverable) await frIndexAdd(env, nameKey, s.fid);
+    return ok({ profile: { ...frPub(s.fid, s), discoverable: s.discoverable } });
+  }
+  if (path === '/friends/me') {
+    if (!me) return ok({ profile: null });
+    const f = await frGetFr(env, hash);
+    const gin = await frGrantsFor(env, f, f.gin, me.fid, 'owner');
+    return ok({ profile: { ...frPub(me.fid, me), discoverable: me.discoverable }, pending: { incoming: f.inc.length, itemRequests: gin.filter(g => g.status === 'pending').length } });
+  }
+  if (path === '/friends/leave') { // stop being discoverable and remove all friend data (keeps the study profile)
+    await frPurge(env, hash); return ok();
+  }
+  if (!me) return bad('profile required', 403);
+  const f = await frGetFr(env, hash);
+
+  if (path === '/friends/search') {
+    if (await frLimit(env, hash, 'search', 15) || await frLimit(env, ip, 'search', 30)) return bad('too many attempts', 429);
+    const first = frValidName(body.first), last = frValidName(body.last);
+    if (!first || !last) return bad('invalid name');
+    const wantKey = await frNameKey(first, last);
+    const fids = (await env.SUBS.get(wantKey, 'json')) || [];
+    const results = [];
+    for (const fid of fids) {
+      if (fid === me.fid || f.friends.includes(fid) || f.blocked.includes(fid)) continue;
+      const o = await frByFid(env, fid);
+      if (!o || !o.social.discoverable || o.social.nameKey !== wantKey) continue;
+      const of = await frGetFr(env, o.hash);
+      if (of.blocked.includes(me.fid)) continue;
+      results.push({ ...frPub(fid, o.social), status: f.out.some(x => x.fid === fid) ? 'sent' : f.inc.some(x => x.fid === fid) ? 'incoming' : 'none' });
+      if (results.length >= 10) break;
+    }
+    return ok({ results });
+  }
+  if (path === '/friends/request') {
+    if (await frLimit(env, hash, 'req', 20)) return bad('too many attempts', 429);
+    const o = await frByFid(env, body.fid);
+    if (!o || o.social.fid === me.fid) return ok(); // same response for unknown, so ids cannot be probed
+    const today = new Date().toISOString().slice(0, 10);
+    if (f.day.d !== today) f.day = { d: today, n: 0 };
+    if (f.day.n >= FR_DAY_REQUESTS) return bad('daily limit', 429);
+    if (f.friends.includes(o.social.fid)) return ok();
+    if (f.blocked.includes(o.social.fid)) return bad('blocked');
+    const of = await frGetFr(env, o.hash);
+    if (!o.social.discoverable && !f.inc.some(x => x.fid === o.social.fid)) return ok();
+    if (of.blocked.includes(me.fid) || of.declined.some(x => x.fid === me.fid)) { f.day.n++; await frPutFr(env, hash, f); return ok(); }
+    if (f.inc.some(x => x.fid === o.social.fid)) { // they already asked me: accept
+      f.inc = f.inc.filter(x => x.fid !== o.social.fid); f.friends.push(o.social.fid); of.out = of.out.filter(x => x.fid !== me.fid); of.friends.push(me.fid);
+      await frPutFr(env, hash, f); await frPutFr(env, o.hash, of); return ok({ accepted: true });
+    }
+    if (f.out.some(x => x.fid === o.social.fid)) return ok();
+    if (f.out.length >= FR_MAX_OUT) return bad('too many pending', 429);
+    const now = new Date().toISOString();
+    f.out.push({ fid: o.social.fid, at: now }); f.day.n++;
+    if (of.inc.length < FR_MAX_INC && !of.inc.some(x => x.fid === me.fid)) { of.inc.push({ fid: me.fid, at: now }); await frPutFr(env, o.hash, of); }
+    await frPutFr(env, hash, f);
+    return ok();
+  }
+  if (path === '/friends/respond') {
+    if (await frLimit(env, hash, 'resp', 60)) return bad('too many attempts', 429);
+    const o = await frByFid(env, body.fid); if (!o) return bad('not found', 404);
+    const of = await frGetFr(env, o.hash);
+    const action = body.action;
+    if (action === 'accept') {
+      if (!f.inc.some(x => x.fid === o.social.fid)) return bad('no request', 404);
+      f.inc = f.inc.filter(x => x.fid !== o.social.fid); if (!f.friends.includes(o.social.fid)) f.friends.push(o.social.fid);
+      of.out = of.out.filter(x => x.fid !== me.fid); of.inc = of.inc.filter(x => x.fid !== me.fid); if (!of.friends.includes(me.fid)) of.friends.push(me.fid);
+      await frPutFr(env, hash, f); await frPutFr(env, o.hash, of); return ok();
+    }
+    if (action === 'decline') {
+      f.inc = f.inc.filter(x => x.fid !== o.social.fid);
+      f.declined.push({ fid: o.social.fid, until: new Date(Date.now() + FR_DECLINE_DAYS * 86400000).toISOString() });
+      await frPutFr(env, hash, f); return ok();
+    }
+    if (action === 'block') {
+      await frRemoveEdge(env, hash, me.fid, o.hash, o.social.fid);
+      const f2 = await frGetFr(env, hash); if (!f2.blocked.includes(o.social.fid)) f2.blocked.push(o.social.fid); await frPutFr(env, hash, f2); return ok();
+    }
+    if (action === 'unblock') { f.blocked = f.blocked.filter(x => x !== o.social.fid); await frPutFr(env, hash, f); return ok(); }
+    return bad('invalid action');
+  }
+  if (path === '/friends/remove') {
+    const o = await frByFid(env, body.fid); if (!o) return bad('not found', 404);
+    await frRemoveEdge(env, hash, me.fid, o.hash, o.social.fid); return ok();
+  }
+  if (path === '/friends/list') {
+    const pub = async fid => { const o = await frByFid(env, fid); return o ? frPub(fid, o.social) : null; };
+    const friends = (await Promise.all(f.friends.map(pub))).filter(Boolean);
+    const incoming = (await Promise.all(f.inc.map(async x => { const p = await pub(x.fid); return p && { ...p, at: x.at }; }))).filter(Boolean);
+    const outgoing = (await Promise.all(f.out.map(async x => { const p = await pub(x.fid); return p && { ...p, at: x.at }; }))).filter(Boolean);
+    const blocked = (await Promise.all(f.blocked.map(pub))).filter(Boolean);
+    return ok({ friends, incoming, outgoing, blocked, itemRequests: await frGrantsFor(env, f, f.gin, me.fid, 'owner'), myRequests: await frGrantsFor(env, f, f.gout, me.fid, 'requester') });
+  }
+  // everything below needs an accepted friendship, checked on the server
+  if (path === '/friends/profile' || path === '/friends/item-request') {
+    if (await frLimit(env, hash, 'view', 60)) return bad('too many attempts', 429);
+    const o = await frByFid(env, body.fid);
+    if (!o || !f.friends.includes(o.social.fid) || !(await frGetFr(env, o.hash)).friends.includes(me.fid)) return bad('not friends', 403);
+    const rec = await env.SUBS.get(`content:${o.hash}`, 'json');
+    const c = (rec && rec.content) || {};
+    if (path === '/friends/profile') {
+      const t = x => String(x || '').slice(0, 200);
+      return ok({ friend: frPub(o.social.fid, o.social), notebooks: (c.notebooks || []).slice(0, 100).map(n => ({ ref: n.id, title: t(n.title) })), summaries: (c.summaries || []).slice(0, 300).map(s => ({ ref: s.id, title: t(s.name) })) });
+    }
+    const kind = body.kind === 'notebook' ? 'notebook' : body.kind === 'summary' ? 'summary' : null;
+    if (!kind || typeof body.ref !== 'string') return bad('invalid item');
+    const item = kind === 'notebook' ? (c.notebooks || []).find(n => n.id === body.ref) : (c.summaries || []).find(s => s.id === body.ref);
+    if (!item) return bad('not found', 404);
+    const title = String(kind === 'notebook' ? item.title : item.name).slice(0, 200);
+    const pending = [];
+    for (const gid of f.gout) { const g = await env.SUBS.get(`gr:${gid}`, 'json'); if (g && (g.status === 'pending' || g.status === 'approved') && Date.parse(g.exp) > Date.now()) pending.push(g); }
+    if (pending.some(g => g.owner === o.social.fid && g.ref === body.ref)) return ok();
+    if (pending.length >= 20) return bad('too many pending', 429);
+    const id = 'g' + frRandom(20);
+    const g = { id, owner: o.social.fid, req: me.fid, kind, ref: body.ref, title, isLink: kind === 'summary' && !!item.url && item.type !== 'text', status: 'pending', created: new Date().toISOString(), exp: new Date(Date.now() + FR_GRANT_DAYS * 86400000).toISOString() };
+    await env.SUBS.put(`gr:${id}`, JSON.stringify(g), { expirationTtl: 40 * 86400 });
+    f.gout.push(id); await frPutFr(env, hash, f);
+    const of = await frGetFr(env, o.hash); of.gin.push(id); await frPutFr(env, o.hash, of);
+    return ok();
+  }
+  if (path === '/friends/item-decide') {
+    const g = typeof body.id === 'string' && await env.SUBS.get(`gr:${body.id}`, 'json');
+    if (!g || g.owner !== me.fid) return bad('not found', 404);
+    if (g.status !== 'pending' || Date.parse(g.exp) < Date.now()) return bad('not pending', 409);
+    const rq = await frByFid(env, g.req);
+    if (!rq || !f.friends.includes(g.req)) { g.status = 'revoked'; await env.SUBS.put(`gr:${g.id}`, JSON.stringify(g), { expirationTtl: 30 * 86400 }); return bad('not friends', 403); }
+    if (body.action === 'approve') { g.status = 'approved'; g.approvedAt = new Date().toISOString(); g.exp = new Date(Date.now() + FR_GRANT_DAYS * 86400000).toISOString(); }
+    else if (body.action === 'decline') g.status = 'declined'; else return bad('invalid action');
+    await env.SUBS.put(`gr:${g.id}`, JSON.stringify(g), { expirationTtl: 40 * 86400 });
+    return ok();
+  }
+  if (path === '/friends/item-accept') {
+    if (await frLimit(env, hash, 'acc', 30)) return bad('too many attempts', 429);
+    const g = typeof body.id === 'string' && await env.SUBS.get(`gr:${body.id}`, 'json');
+    if (!g || g.req !== me.fid) return bad('not found', 404);
+    if (g.status !== 'approved' || Date.parse(g.exp) < Date.now()) return bad('not approved', 409);
+    const o = await frByFid(env, g.owner);
+    if (!o || !f.friends.includes(g.owner) || !(await frGetFr(env, o.hash)).friends.includes(me.fid)) return bad('not friends', 403);
+    const orec = await env.SUBS.get(`content:${o.hash}`, 'json'); const oc = (orec && orec.content) || {};
+    const item = g.kind === 'notebook' ? (oc.notebooks || []).find(n => n.id === g.ref) : (oc.summaries || []).find(s => s.id === g.ref);
+    if (!item) return bad('item gone', 410);
+    const rec = await env.SUBS.get(`content:${hash}`, 'json'); if (!rec) return bad('no content', 404);
+    const c = rec.content; const subject = (c.subjects || []).find(s => s.key === body.subjectKey);
+    if (!subject) return bad('invalid subject');
+    const note = ('התקבל מ' + o.social.first + ' ' + o.social.last).slice(0, 120);
+    if (g.kind === 'notebook') {
+      c.notebooks = Array.isArray(c.notebooks) ? c.notebooks : [];
+      if (c.notebooks.length >= 60) return bad('notebook limit');
+      const now = new Date().toISOString();
+      c.notebooks.push({ id: 'nb-' + crypto.randomUUID(), subjectKey: subject.key, title: String(item.title).slice(0, 100), color: ['pink', 'blue', 'purple', 'mint', 'orange'].includes(item.color) ? item.color : 'pink', pages: (item.pages || []).slice(0, 100).map(p => ({ id: 'pg-' + crypto.randomUUID(), createdAt: now, updatedAt: now, title: String(p.title || '').slice(0, 200), text: String(p.text || '').slice(0, 20000) })), createdAt: now, updatedAt: now });
+    } else if (item.type === 'text') {
+      c.summaries.push({ id: 'text-' + crypto.randomUUID(), type: 'text', name: String(item.name).slice(0, 200), text: String(item.text || '').slice(0, 20000), subjectKey: subject.key, subject: subject.name, emoji: '📄', note, color: subject.color || 'pink' });
+    } else {
+      let u; try { u = new URL(item.url); } catch { return bad('invalid link'); }
+      if (u.protocol !== 'https:' || !['drive.google.com', 'docs.google.com'].includes(u.hostname)) return bad('invalid link');
+      c.summaries.push({ id: 'link-' + crypto.randomUUID(), name: String(item.name).slice(0, 200), subject: subject.name, emoji: subject.emoji || '📄', url: u.href, note, color: subject.color || 'pink' });
+    }
+    if (!validContent(c)) return bad('content too large');
+    await saveContent(env, hash, c);
+    g.status = 'done'; await env.SUBS.put(`gr:${g.id}`, JSON.stringify(g), { expirationTtl: 30 * 86400 });
+    return ok();
+  }
+  return bad('not found', 404);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -414,6 +693,11 @@ export default {
       if(limited)return jsonResponse({error:'too many attempts',retryAfter:900},429,env);
     }
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(env) });
+    if (url.pathname.startsWith('/friends/')) {
+      const limited = await accessLimit(request, env, url.pathname);
+      if (limited) return jsonResponse({ error: 'too many attempts', retryAfter: 900 }, 429, env);
+      return handleFriends(request, env, url);
+    }
     if(url.pathname==='/ocr/transcribe')return photoText(request,env);
     if (url.pathname === '/health') return jsonResponse({ ok: true }, 200, env);
 
@@ -542,7 +826,7 @@ export default {
         if (url.pathname === '/content/preferences') {
           const rec = await env.SUBS.get(`content:${hash}`, 'json');
           if (!rec) return jsonResponse({ error: 'no content' }, 404, env);
-          if (!['pink','blue','purple','mint','orange','dark'].includes(body.theme)) return jsonResponse({ error:'bad theme' },400,env);
+          if (!['pink','blue','purple','mint','burgundy','dark'].includes(body.theme)) return jsonResponse({ error:'bad theme' },400,env);
           rec.content.preferences = { ...(rec.content.preferences || {}), theme:body.theme };
           const saved = await saveContent(env, hash, rec.content);
           return jsonResponse({ok:true,v:saved.v},200,env);
@@ -630,6 +914,7 @@ export default {
 
       if (url.pathname === '/sync/destroy') {
         const hash=key.slice(5);
+        await frPurge(env,hash);
         const recovery=await env.SUBS.get(`recovery-profile:${hash}`);
         if(recovery)await env.SUBS.delete(`recovery:${recovery}`);
         await env.SUBS.delete(`recovery-profile:${hash}`);
