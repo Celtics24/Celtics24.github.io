@@ -421,7 +421,7 @@ function subjectPageHtml(subj){
   const exam=nextExamFor(subj.name);
   return `
   <div><a href="#/summaries" class="file-button back-link" data-variant="secondary">‹ סיכומים</a></div>
-  <div class="subject-head"><span class="subject-head-name">${subj.name}</span></div>
+  <div class="subject-head"><span class="subject-head-name">${subj.name}</span><button type="button" class="file-button" data-variant="secondary" id="subj-color-btn">צבע</button></div><div id="subj-color-box"></div>
   ${exam?`<div class="subj-exam" style="background:${subj.color.bg};border-color:${subj.color.border}">
     <span class="subj-exam-name">${exam.name}</span>
     <span class="subj-exam-meta">${examWeekday(exam)}, ${exam.d} ב${hebMonths[exam.m-1]}${exam.far?` ${exam.y}`:''}${exam.time?` · ${exam.time}`:''} · ${countdown(exam)}</span></div>`:''}
@@ -466,6 +466,7 @@ function render(){
     const subj=subjects.find(s=>s.key===m[1]);
     app.innerHTML=(subj?subjectPageHtml(subj):'')+closing;
     bindToggles(app);
+    if(subj&&window.bindSubjectColor)window.bindSubjectColor(subj.key);
   }else{
     setTab('home');
     app.innerHTML=homeHtml()+closing;
@@ -500,13 +501,13 @@ window.addEventListener('hashchange',render);
 render();
 </script>
 <script src="sync.js?v=20261022em1"></script>
-<script src="content.js?v=20261024dr1"></script>
+<script src="content.js?v=20261024c1"></script>
 <script src="board.js?v=20261024dr1"></script>
-<script src="notebooks.js?v=20261024dr1"></script>
+<script src="notebooks.js?v=20261024c1"></script>
 <script src="exams.js?v=20261023ex1"></script>
 <script src="friends.js?v=20261023fr5"></script>
 <script src="admin.js?v=20261023ad1"></script>
 <script src="push.js?v=20261023em2"></script>
-<script src="i18n.js?v=20261024i9"></script>
+<script src="i18n.js?v=20261024i10"></script>
 </body>
 </html>
