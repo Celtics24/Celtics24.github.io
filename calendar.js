@@ -1,7 +1,7 @@
 // Optional: import exams from Google Calendar (read-only, per tap, nothing stored).
 (() => {
-  const GOOGLE_CLIENT_ID=''; // set when the Google OAuth web client exists; empty keeps the card in its "not enabled" state
-  const SCOPE='https://www.googleapis.com/auth/calendar.events.readonly';
+  const GOOGLE_CLIENT_ID='2262625539-b07q3hsd350cpkncrcui3quhhc2gd44m.apps.googleusercontent.com'; // set when the Google OAuth web client exists; empty keeps the card in its "not enabled" state
+  const SCOPE='https://www.googleapis.com/auth/calendar.events.owned.readonly';
   const API='https://study-coach-push.y0546367987.workers.dev';
   const code=()=>localStorage.getItem('sync.code.v1')||'';
   async function api(path,body){const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw Error(j.error||'server');return j;}
@@ -32,7 +32,7 @@
       box.innerHTML='<p class="save-state">ייבוא מבחנים מיומן גוגל עדיין לא מופעל. כשהחיבור יהיה מוכן הוא יופיע כאן. הוספת מבחן ידנית זמינה תמיד בדף המבחנים.</p><button class="file-button" type="button" disabled>חיבור ליומן גוגל</button>';
       return;
     }
-    box.innerHTML='<p class="save-state">קריאה בלבד מהיומן, בלחיצה אחת בכל פעם. שום דבר מהיומן לא נשמר, חוץ ממבחנים שתאשרי לייבא.</p><button class="file-button" type="button" id="cal-connect">חיבור ליומן גוגל</button><div id="cal-result"></div>';
+    box.innerHTML='<p class="save-state">קריאה בלבד מהיומן שלך, רק בלחיצה. רק מבחנים שתסמני נשמרים בפרופיל, כמו מבחן שהוספת ידנית, ואינם נראים לחברים.</p><button class="file-button" type="button" id="cal-connect">חיבור ליומן גוגל</button><div id="cal-result"></div>';
     box.querySelector('#cal-connect').addEventListener('click',async ev=>{
       const p=window.boardProfile&&window.boardProfile();const out=box.querySelector('#cal-result');
       if(!p||!(p.subjects||[]).length){paint(out,'<p class="form-error">אין מקצועות בפרופיל.</p>');return;}
