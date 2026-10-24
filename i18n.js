@@ -21,6 +21,7 @@ const D=[
 ['למדתי!','Studied!'],['למדתי?','Studied?'],['עדיין ריקה','Still empty'],['יש סיכום','Has summary'],['עריכה','Edit'],['‹ סיכומים','‹ Summaries'],
 ['עוד אין סיכומים במקצוע','No summaries in this subject yet'],['חיפוש סיכום או מקצוע…','Search a summary or subject…'],['חיפוש סיכום או מקצוע','Search a summary or subject'],
 // exams page
+['יומן','Calendar'],['חודש קודם','Previous month'],['חודש הבא','Next month'],['חודש','Month'],['שנה','Year'],['אין מבחנים ביום הזה.','No exams on this day.'],['הוספת מבחן ביום הזה','Add an exam on this day'],
 ['לוח מבחנים','Exam board'],['הוספת מבחן','Add exam'],['נובמבר 2026','November 2026'],['יומן נובמבר 2026','November 2026 calendar'],
 ['תאריך','Date'],['שעה (לא חובה)','Time (optional)'],['שם המבחן (לא חובה)','Exam name (optional)'],['למשל: בגרות בפיזיולוגיה','E.g.: biology matriculation'],
 ['קישור לסיכומים (לא חובה)','Link summaries (optional)'],['הצגת סיכומים מכל המקצועות','Show summaries from all subjects'],
