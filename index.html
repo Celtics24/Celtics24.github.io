@@ -399,7 +399,7 @@ function examsPageHtml(){
   <header class="file-header"><h1 class="file-title">מבחנים</h1></header>
   ${nextExamHtml()}
   <section class="group"><h2 class="group-label">לוח מבחנים</h2><button class="file-button add-link-first" id="exam-add" type="button">הוספת מבחן</button><div id="exam-form-box"></div>${examBoardHtml()}</section>
-  <section class="group"><h2 class="group-label">נובמבר 2026</h2>${novemberHtml()}</section>`;
+  <section class="group"><h2 class="group-label">יומן</h2><div id="exam-cal"></div></section>`;
 }
 function homeBelowHtml(q){
   if(q&&q.trim().length>0)return searchResultsHtml(q);
@@ -504,10 +504,10 @@ render();
 <script src="content.js?v=20261024c1"></script>
 <script src="board.js?v=20261024dr1"></script>
 <script src="notebooks.js?v=20261024c1"></script>
-<script src="exams.js?v=20261023ex1"></script>
+<script src="exams.js?v=20261024cal1"></script>
 <script src="friends.js?v=20261023fr5"></script>
 <script src="admin.js?v=20261023ad1"></script>
 <script src="push.js?v=20261023em2"></script>
-<script src="i18n.js?v=20261024i10"></script>
+<script src="i18n.js?v=20261024i11"></script>
 </body>
 </html>
