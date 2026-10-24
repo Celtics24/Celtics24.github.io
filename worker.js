@@ -490,6 +490,18 @@ async function frIndexRemove(env, nameKey, fid) {
   const list = ((await env.SUBS.get(nameKey, 'json')) || []).filter(x => x !== fid);
   if (list.length) await env.SUBS.put(nameKey, JSON.stringify(list)); else await env.SUBS.delete(nameKey);
 }
+// Partial-name index (opt-in, separate from exact-name discoverability): pfx:<first 2 letters> -> [fid]
+const FR_PFX_RE = /^[\p{L}][\p{L} '\-]{1,29}$/u;
+const frLow = s => frNorm(s).toLocaleLowerCase('he');
+const frPfxKeys = s => [...new Set([frLow(s.first), frLow(s.last)].map(x => 'pfx:' + Array.from(x).slice(0, 2).join('')))];
+async function frPfxAdd(env, s) {
+  for (const k of frPfxKeys(s)) { const l = (await env.SUBS.get(k, 'json')) || []; if (!l.includes(s.fid) && l.length < 300) { l.push(s.fid); await env.SUBS.put(k, JSON.stringify(l)); } }
+}
+async function frPfxRemove(env, s) {
+  for (const k of frPfxKeys(s)) { const l = ((await env.SUBS.get(k, 'json')) || []).filter(x => x !== s.fid); if (l.length) await env.SUBS.put(k, JSON.stringify(l)); else await env.SUBS.delete(k); }
+}
+const frInitial = s => Array.from(frNorm(s))[0] + '.';
+const frPubFind = (fid, s) => ({ fid, tag: frTag(fid), first: s.first, last: frInitial(s.last) });
 function frAreFriends(a, bFid) { return a.friends.includes(bFid); }
 async function frRemoveEdge(env, hashA, fidA, hashB, fidB) {
   // remove every trace of A<->B relation (friends, requests) from both records; revoke open grants between them
@@ -511,6 +523,7 @@ async function frPurge(env, hash) {
   for (const fid of others) { const o = await frByFid(env, fid); if (o) await frRemoveEdge(env, hash, s.fid, o.hash, fid); }
   for (const gid of [...f.gin, ...f.gout]) { const g = await env.SUBS.get(`gr:${gid}`, 'json'); if (g && (g.owner === s.fid || g.req === s.fid)) await env.SUBS.delete(`gr:${gid}`); }
   if (s.discoverable) await frIndexRemove(env, s.nameKey, s.fid);
+  if (s.findable) await frPfxRemove(env, s);
   await env.SUBS.delete(`fid:${s.fid}`); await env.SUBS.delete(`social:${hash}`); await env.SUBS.delete(`fr:${hash}`);
 }
 async function frGrantsFor(env, f, ids, meFid, side) {
@@ -550,7 +563,9 @@ async function handleFriends(request, env, url) {
     let s = me;
     if (s) {
       if (s.discoverable) await frIndexRemove(env, s.nameKey, s.fid);
+      if (s.findable) await frPfxRemove(env, s);
       s = { ...s, first, last, discoverable: body.discoverable, nameKey };
+      if (s.findable) await frPfxAdd(env, s);
     } else {
       let fid; for (let i = 0; i < 6; i++) { fid = frRandom(12); if (!(await env.SUBS.get(`fid:${fid}`))) break; fid = null; }
       if (!fid) return bad('try again', 503);
@@ -561,13 +576,13 @@ async function handleFriends(request, env, url) {
     await env.SUBS.put(`social:${hash}`, JSON.stringify(s));
     if (s.discoverable) await frIndexAdd(env, nameKey, s.fid);
     if (created) await notifyOwnerNewUser(env, first, last);
-    return ok({ profile: { ...frPub(s.fid, s), discoverable: s.discoverable } });
+    return ok({ profile: { ...frPub(s.fid, s), discoverable: s.discoverable, findable: s.findable === true } });
   }
   if (path === '/friends/me') {
     if (!me) return ok({ profile: null });
     const f = await frGetFr(env, hash);
     const gin = await frGrantsFor(env, f, f.gin, me.fid, 'owner');
-    return ok({ profile: { ...frPub(me.fid, me), discoverable: me.discoverable }, pending: { incoming: f.inc.length, itemRequests: gin.filter(g => g.status === 'pending').length } });
+    return ok({ profile: { ...frPub(me.fid, me), discoverable: me.discoverable, findable: me.findable === true }, pending: { incoming: f.inc.length, itemRequests: gin.filter(g => g.status === 'pending').length } });
   }
   if (path === '/friends/leave') { // stop being discoverable and remove all friend data (keeps the study profile)
     await frPurge(env, hash); return ok();
@@ -575,6 +590,55 @@ async function handleFriends(request, env, url) {
   if (!me) return bad('profile required', 403);
   const f = await frGetFr(env, hash);
 
+  if (path === '/friends/set-findable') { // new opt-in: appear in start-of-name search and suggestions (off by default)
+    if (await frLimit(env, hash, 'findable', 10)) return bad('too many attempts', 429);
+    if (typeof body.findable !== 'boolean') return bad('findable required');
+    const want = body.findable;
+    if (want !== (me.findable === true)) {
+      const s = { ...me, findable: want };
+      if (want) { await frPfxAdd(env, s); s.findableAt = new Date().toISOString(); } else await frPfxRemove(env, me);
+      await env.SUBS.put(`social:${hash}`, JSON.stringify(s));
+      return ok({ findable: want });
+    }
+    return ok({ findable: want });
+  }
+  if (path === '/friends/prefix') {
+    if (await frLimit(env, hash, 'prefix', 60) || await frLimit(env, ip, 'prefix', 120)) return bad('too many attempts', 429);
+    const q = frLow(body.q);
+    if (!FR_PFX_RE.test(q) || Array.from(q).length < 2) return bad('invalid query');
+    const fids = (await env.SUBS.get('pfx:' + Array.from(q).slice(0, 2).join(''), 'json')) || [];
+    const results = [];
+    for (const fid of fids) {
+      if (fid === me.fid || f.friends.includes(fid) || f.blocked.includes(fid)) continue;
+      const o = await frByFid(env, fid);
+      if (!o || o.social.findable !== true) continue;
+      const fl = frLow(o.social.first), ll = frLow(o.social.last);
+      if (!(fl.startsWith(q) || ll.startsWith(q) || (fl + ' ' + ll).startsWith(q))) continue;
+      const of = await frGetFr(env, o.hash);
+      if (of.blocked.includes(me.fid)) continue;
+      results.push({ ...frPubFind(fid, o.social), status: f.out.some(x => x.fid === fid) ? 'sent' : f.inc.some(x => x.fid === fid) ? 'incoming' : 'none' });
+      if (results.length >= 8) break;
+    }
+    return ok({ results });
+  }
+  if (path === '/friends/suggestions') { // people who opted in and share at least one accepted friend; only a count of mutual friends is returned
+    if (await frLimit(env, hash, 'sugg', 20)) return bad('too many attempts', 429);
+    const count = new Map();
+    for (const ffid of f.friends.slice(0, 30)) {
+      const fo = await frByFid(env, ffid); if (!fo) continue;
+      const ff = await frGetFr(env, fo.hash); if (!ff.friends.includes(me.fid)) continue;
+      for (const x of ff.friends) { if (x === me.fid || f.friends.includes(x) || f.blocked.includes(x)) continue; count.set(x, (count.get(x) || 0) + 1); }
+    }
+    const results = [];
+    for (const [fid, n] of [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25)) {
+      const o = await frByFid(env, fid);
+      if (!o || o.social.findable !== true) continue;
+      const of = await frGetFr(env, o.hash); if (of.blocked.includes(me.fid)) continue;
+      results.push({ ...frPubFind(fid, o.social), mutual: n, status: f.out.some(x => x.fid === fid) ? 'sent' : f.inc.some(x => x.fid === fid) ? 'incoming' : 'none' });
+      if (results.length >= 8) break;
+    }
+    return ok({ results });
+  }
   if (path === '/friends/search') {
     if (await frLimit(env, hash, 'search', 15) || await frLimit(env, ip, 'search', 30)) return bad('too many attempts', 429);
     const first = frValidName(body.first), last = frValidName(body.last);
@@ -838,9 +902,11 @@ export default {
         if (url.pathname === '/owner/block') {
           rec.blocked = true; rec.blockedAt = new Date().toISOString();
           if (social && social.discoverable) await frIndexRemove(env, social.nameKey, social.fid);
+          if (social && social.findable) await frPfxRemove(env, social);
         } else {
           delete rec.blocked; delete rec.blockedAt;
           if (social && social.discoverable) await frIndexAdd(env, social.nameKey, social.fid);
+          if (social && social.findable) await frPfxAdd(env, social);
         }
         await env.SUBS.put(`sync:${target}`, JSON.stringify(rec));
         return jsonResponse({ ok: true, blocked: url.pathname === '/owner/block' }, 200, env);
