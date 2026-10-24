@@ -74,6 +74,29 @@
       busy=false;render();
     });
   };
+  const subjectColorLabels={pink:'ורוד',lavender:'סגול',mint:'מנטה',sky:'תכלת',peach:'אפרסק',lemon:'לימון',sand:'חול',clay:'חרס',teal:'טיל',rose:'ורדרד',orange:'כתום',green:'ירוק',peri:'סגול־כחול'};
+  window.bindSubjectColor=key=>{
+    const btn=document.getElementById('subj-color-btn'),box=document.getElementById('subj-color-box');
+    if(!btn||!box)return;
+    btn.addEventListener('click',()=>{
+      if(box.innerHTML){box.innerHTML='';return;}
+      const cur=(current?.subjects.find(s=>s.key===key)||{}).color||'pink';
+      box.innerHTML=`<section class="photo-panel"><div class="theme-options">${Object.keys(C).map(k=>`<button type="button" class="theme-option" data-scolor="${k}" aria-pressed="${cur===k}" style="background:${C[k].bg};color:${C[k].accent}">${subjectColorLabels[k]||k}</button>`).join('')}</div><p class="save-state" id="subj-color-status" role="status"></p></section>`;
+      box.querySelectorAll('[data-scolor]').forEach(b=>b.addEventListener('click',async()=>{
+        box.querySelectorAll('button').forEach(x=>x.disabled=true);
+        try{
+          const latest=await api('/content/get',{code:code()});
+          const c=latest.content,subj=(c.subjects||[]).find(s=>s.key===key);
+          if(!subj)throw Error('missing');
+          subj.color=b.dataset.scolor;
+          for(const s of c.summaries||[])if(s.subjectKey===key||(!s.subjectKey&&s.subject===subj.name))s.color=b.dataset.scolor;
+          for(const e of c.exams||[])if(e.subject===subj.name)e.color=b.dataset.scolor;
+          await api('/content/put',{code:code(),content:c});
+          apply(c);render();
+        }catch(e){box.querySelectorAll('button').forEach(x=>x.disabled=false);const st=document.getElementById('subj-color-status');if(st)st.textContent='לא נשמר. נסי שוב.';}
+      }));
+    });
+  };
   window.boardProfile=()=>current;
   window.notebookMutation=async body=>{const j=await api('/content/notebook',{...body,code:code()});apply(j.content);return j;};
   window.saveBoardText=async body=>{const j=await api('/content/save-text',{...body,code:code()});apply(j.content);return j.id;};
