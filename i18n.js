@@ -30,6 +30,7 @@ const D=[
 ['צבע האפליקציה','App color'],['אבטחת גישה','Access security'],['מערכת השעות','Timetable'],['חיבור בין מכשירים','Connect devices'],
 ['פרופיל','Profile'],['התראות','Notifications'],['ניהול האפליקציה','App admin'],['פרטיות','Privacy'],['מדיניות פרטיות','Privacy policy'],['מחיקת פרופיל','Delete profile'],
 ['ורוד','Pink'],['כחול','Blue'],['סגול','Purple'],['ירוק מנטה','Mint green'],['יין','Wine'],['כהה','Dark'],['מנטה','Mint'],['כתום','Orange'],
+['צבע','Color'],['צבע הכריכה','Cover color'],['תכלת','Sky blue'],['אפרסק','Peach'],['לימון','Lemon'],['חול','Sand'],['חרס','Clay'],['טיל','Teal'],['ורדרד','Rose'],['ירוק','Green'],['סגול־כחול','Periwinkle'],
 ['שמירת מפתח שחזור','Save recovery key'],['המפתח מאפשר כניסה אם קוד החיבור אבד. שמרו אותו במקום פרטי.','The key lets you sign in if the pairing code is lost. Keep it somewhere private.'],
 ['המפתח החדש נשמר בקובץ. מפתח קודם בוטל.','The new key was saved to a file. Any previous key was revoked.'],['לא ניתן ליצור מפתח כרגע. נסו שוב.',"Can't create a key right now. Try again."],
 ['מערכת השעות שלך','Your timetable'],
