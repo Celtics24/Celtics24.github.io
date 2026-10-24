@@ -882,6 +882,7 @@ export default {
             now=new Date(Math.max(Date.now(),Date.parse(n.updatedAt)+1)).toISOString();
             if(body.action==='delete'){c.notebooks=c.notebooks.filter(x=>x.id!==n.id);}
             else if(body.action==='rename'){if(!title||title.length>100)return fail('invalid notebook');n.title=title;n.updatedAt=now;}
+            else if(body.action==='set-color'){if(!['pink','blue','purple','mint','orange'].includes(String(body.color)))return fail('invalid color');n.color=String(body.color);n.updatedAt=now;}
             else if(body.action==='save-page'){
               if(!title||title.length>200||!text||text.length>20000)return fail('invalid page');
               let page=n.pages.find(p=>p.id===body.pageId);
