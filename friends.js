@@ -25,6 +25,7 @@
       <label>שם פרטי<input name="first" required minlength="2" maxlength="30" value="${e(m?m.first:'')}" autocomplete="off"></label>
       <label>שם משפחה<input name="last" required minlength="2" maxlength="30" value="${e(m?m.last:'')}" autocomplete="off"></label>
       <label class="exam-check"><input type="checkbox" name="disc" ${m&&m.discoverable?'checked':''}> אפשר לאחרים למצוא אותי לפי שם מלא</label>
+      ${m?`<label class="exam-check"><input type="checkbox" id="fr-findable" ${m.findable?'checked':''}> אפשר לאחרים למצוא אותי לפי תחילת השם ולהציע אותי כחברה משותפת</label><p class="save-state">יוצגו רק שם פרטי ואות ראשונה של שם המשפחה. כבוי כברירת מחדל, אפשר לכבות בכל רגע.</p>`:''}
       <p class="save-state">${m?`הקוד הציבורי שלך: <strong dir="ltr">#${e(m.tag)}</strong>. `:''}${NOTE}</p>
       <button class="file-button">${m?'שמירה':'שמירת פרופיל'}</button>
       ${m?'<button class="file-button danger" type="button" id="fr-leave">הסרת הפרופיל החברתי</button>':''}
@@ -33,29 +34,38 @@
     box.querySelector('form').addEventListener('submit',async ev=>{ev.preventDefault();const f=ev.target,b=f.querySelector('button');b.disabled=true;
       try{const j=await api('/friends/set-profile',{first:f.first.value,last:f.last.value,discoverable:f.disc.checked});me=j.profile;meLoaded=true;paintProfile(box);box.querySelector('#fr-profile-msg').textContent='נשמר.';paintAdd(document.getElementById('friends-add'));}
       catch(err){msg(err.message==='invalid name'?'השם יכול להכיל אותיות, רווח, גרש ומקף, 2 עד 30 תווים.':errText(err));b.disabled=false;}});
+    box.querySelector('#fr-findable')?.addEventListener('change',async ev=>{const c=ev.target;c.disabled=true;try{await api('/friends/set-findable',{findable:c.checked});me.findable=c.checked;msg(c.checked?'פעיל. אפשר לכבות בכל רגע.':'כבוי.');}catch(err){c.checked=!c.checked;msg(errText(err));}c.disabled=false;});
     box.querySelector('#fr-leave')?.addEventListener('click',async ev=>{if(!confirm('להסיר את הפרופיל החברתי? חברים, בקשות ואישורים יימחקו. הסיכומים והמחברות שלך לא ייפגעו.'))return;ev.target.disabled=true;
       try{await api('/friends/leave',{});me=null;paintProfile(box);paintAdd(document.getElementById('friends-add'));}catch(err){msg(errText(err));ev.target.disabled=false;}});
   }
+  const rowHtml=(r,extra)=>`<div class="fr-row"><span class="fr-name">${who(r)}${extra||''}</span>${r.status==='sent'?'<span class="save-state">נשלחה בקשה</span>':r.status==='incoming'?'<span class="save-state">שלחו לך בקשה, מופיעה למטה</span>':`<button class="file-button" data-variant="secondary" type="button" data-req="${e(r.fid)}">בקשת חברות</button>`}</div>`;
+  function bindReq(out){out.querySelectorAll('[data-req]').forEach(bt=>bt.addEventListener('click',async()=>{bt.disabled=true;try{await api('/friends/request',{fid:bt.dataset.req});bt.outerHTML='<span class="save-state">נשלחה בקשה</span>';}catch(err){bt.disabled=false;out.insertAdjacentHTML('beforeend',`<p class="form-error">${errText(err)}</p>`);}}));}
   function paintAdd(box){
     if(!box)return;
-    if(!me){box.innerHTML='<p class="save-state">\u05db\u05d3\u05d9 \u05dc\u05d4\u05d5\u05e1\u05d9\u05e3 \u05d7\u05d1\u05e8\u05d9\u05dd \u05e6\u05e8\u05d9\u05da \u05e7\u05d5\u05d3\u05dd \u05dc\u05e9\u05de\u05d5\u05e8 \u05e9\u05dd \u05d1\u05e4\u05e8\u05d5\u05e4\u05d9\u05dc.</p>';return;}
-    box.innerHTML=`<form class="add-link-form" id="fr-search-form"><label>\u05e9\u05dd \u05de\u05dc\u05d0<input name="full" required minlength="5" maxlength="60" autocomplete="off"></label>
-      <p class="save-state">\u05d7\u05d9\u05e4\u05d5\u05e9 \u05dc\u05e4\u05d9 \u05e9\u05dd \u05de\u05dc\u05d0 \u05de\u05d3\u05d5\u05d9\u05e7, \u05e8\u05e7 \u05de\u05d9 \u05e9\u05d1\u05d7\u05e8 \u05dc\u05d4\u05d9\u05d5\u05ea \u05e0\u05d9\u05ea\u05df \u05dc\u05d7\u05d9\u05e4\u05d5\u05e9.</p><button class="file-button">\u05d7\u05d9\u05e4\u05d5\u05e9</button></form><div id="fr-results"></div>`;
-    const out=box.querySelector('#fr-results');
-    box.querySelector('form').addEventListener('submit',async ev=>{ev.preventDefault();const f=ev.target,b=f.querySelector('button');b.disabled=true;out.innerHTML='';
-      const words=String(f.full.value||'').replace(/\s+/g,' ').trim().split(' ');
-      const paint=j=>{out.innerHTML=j.results.length?`<div class="fr-list">${j.results.map(r=>`<div class="fr-row"><span class="fr-name">${who(r)}</span>${r.status==='sent'?'<span class="save-state">\u05e0\u05e9\u05dc\u05d7\u05d4 \u05d1\u05e7\u05e9\u05d4</span>':r.status==='incoming'?'<span class="save-state">\u05e9\u05dc\u05d7\u05d5 \u05dc\u05da \u05d1\u05e7\u05e9\u05d4, \u05de\u05d5\u05e4\u05d9\u05e2\u05d4 \u05dc\u05de\u05d8\u05d4</span>':`<button class="file-button" data-variant="secondary" type="button" data-req="${e(r.fid)}">\u05d1\u05e7\u05e9\u05ea \u05d7\u05d1\u05e8\u05d5\u05ea</button>`}</div>`).join('')}</div><p class="save-state">${NOTE}</p>`:'<p class="save-state">\u05dc\u05d0 \u05e0\u05de\u05e6\u05d0. \u05d1\u05d3\u05e7\u05d9 \u05d0\u05d9\u05d5\u05ea, \u05d0\u05d5 \u05e9\u05d4\u05d0\u05d3\u05dd \u05dc\u05d0 \u05d1\u05d7\u05e8 \u05dc\u05d4\u05d9\u05d5\u05ea \u05e0\u05d9\u05ea\u05df \u05dc\u05d7\u05d9\u05e4\u05d5\u05e9.</p>';
-        out.querySelectorAll('[data-req]').forEach(bt=>bt.addEventListener('click',async()=>{bt.disabled=true;try{await api('/friends/request',{fid:bt.dataset.req});bt.outerHTML='<span class="save-state">\u05e0\u05e9\u05dc\u05d7\u05d4 \u05d1\u05e7\u05e9\u05d4</span>';}catch(err){bt.disabled=false;out.insertAdjacentHTML('beforeend',`<p class="form-error">${errText(err)}</p>`);}}));};
-      if(words.length<2){out.innerHTML='<p class="form-error">\u05d4\u05db\u05e0\u05d9\u05e1\u05d9 \u05e9\u05dd \u05de\u05dc\u05d0 - \u05e9\u05dd \u05e4\u05e8\u05d8\u05d9 \u05d5\u05e9\u05dd \u05de\u05e9\u05e4\u05d7\u05d4.</p>';b.disabled=false;return;}
-      // Try every first|last split so any exact full name matches, including multi-word names.
-      try{let found=null;
-        for(let i=1;i<words.length&&!found;i++){
-          try{const j=await api('/friends/search',{first:words.slice(0,i).join(' '),last:words.slice(i).join(' ')});
-            if(j.results&&j.results.length)found=j;}catch(err){if(err.message==='invalid name')continue;throw err;}
-        }
-        paint(found||{results:[]});
-      }catch(err){out.innerHTML=`<p class="form-error">${errText(err)}</p>`;}
-      b.disabled=false;});
+    if(!me){box.innerHTML='<p class="save-state">כדי להוסיף חברים צריך קודם לשמור שם בפרופיל.</p>';return;}
+    box.innerHTML=`<label>חיפוש חברים<input id="fr-q" maxlength="60" autocomplete="off" placeholder="התחילי להקליד שם"></label>
+      <p class="save-state">מוצגים רק מי שאישרו להופיע בחיפוש.</p><div id="fr-results"></div>`;
+    const out=box.querySelector('#fr-results'),inp=box.querySelector('#fr-q');let timer=0,seq=0;
+    async function run(){
+      const q=inp.value.replace(/\s+/g,' ').trim();const my=++seq;
+      if(Array.from(q).length<2){out.innerHTML='';return;}
+      try{
+        let list=[];try{list=(await api('/friends/prefix',{q})).results||[];}catch(err){if(err.message!=='invalid query')throw err;}
+        if(!list.length){const words=q.split(' ');if(words.length>=2){for(let i=1;i<words.length&&!list.length;i++){try{list=(await api('/friends/search',{first:words.slice(0,i).join(' '),last:words.slice(i).join(' ')})).results||[];}catch(err){if(err.message==='invalid name')continue;throw err;}}}}
+        if(my!==seq)return;
+        out.innerHTML=list.length?`<div class="fr-list">${list.map(r=>rowHtml(r)).join('')}</div><p class="save-state">${NOTE}</p>`:'<p class="save-state">לא נמצא.</p>';
+        bindReq(out);
+      }catch(err){if(my===seq)out.innerHTML=`<p class="form-error">${errText(err)}</p>`;}
+    }
+    inp.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(run,350);});
+  }
+  async function paintSuggestions(box){
+    if(!box||!me)return;
+    if(localStorage.getItem('fr.sugg.off')==='1'){box.innerHTML='<button class="fr-link" type="button" id="fr-sugg-on">הצגת הצעות חברים</button>';box.querySelector('#fr-sugg-on').onclick=()=>{localStorage.removeItem('fr.sugg.off');paintSuggestions(box);};return;}
+    let list=[];try{list=(await api('/friends/suggestions',{})).results||[];}catch(_){return;}
+    if(!list.length){box.innerHTML='';return;}
+    box.innerHTML=`<h2 class="group-label">אולי את מכירה</h2><div class="fr-list">${list.map(r=>rowHtml(r,` <span class="save-state">· ${r.mutual} ${r.mutual===1?'חבר משותף':'חברים משותפים'}</span>`)).join('')}</div><button class="fr-link" type="button" id="fr-sugg-off">להסתיר הצעות</button>`;
+    bindReq(box);box.querySelector('#fr-sugg-off').onclick=()=>{localStorage.setItem('fr.sugg.off','1');paintSuggestions(box);};
   }
 
   // ----- Friends page -----
@@ -85,10 +95,11 @@
     const blocked=j.blocked.map(p=>`<div class="fr-row"><span class="fr-name">${who(p)}</span><button class="fr-link" type="button" data-act="unblock" data-fid="${e(p.fid)}">ביטול חסימה</button></div>`).join('');
     root.innerHTML=`<header class="file-header"><h1 class="file-title">חברים</h1></header>
       <section class="group"><h2 class="group-label">הוספת חברים</h2><div id="friends-add-page"></div></section>
+      <section class="group" id="friends-sugg"></section>
       ${sec('בקשות חברות',incoming)}${sec('בקשות לפריטים שלי',reqIn)}${sec('מה ביקשתי',mine)}
       <section class="group"><h2 class="group-label">החברים שלי</h2>${friends||'<p class="save-state">עוד אין חברים.</p>'}</section>
       ${sec('בקשות שנשלחו',out)}${sec('חסומים',blocked)}<div id="fr-msg" class="form-error"></div>`;
-    paintAdd(root.querySelector('#friends-add-page'));
+    paintAdd(root.querySelector('#friends-add-page'));paintSuggestions(root.querySelector('#friends-sugg'));
     const msg=t=>{root.querySelector('#fr-msg').textContent=t;};
     root.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',async()=>{b.disabled=true;try{await api('/friends/respond',{fid:b.dataset.fid,action:b.dataset.act});renderFriends();}catch(err){msg(errText(err));b.disabled=false;}}));
     root.querySelectorAll('[data-gact]').forEach(b=>b.addEventListener('click',async()=>{b.disabled=true;try{await api('/friends/item-decide',{id:b.dataset.gid,action:b.dataset.gact});renderFriends();}catch(err){msg(errText(err));b.disabled=false;}}));
