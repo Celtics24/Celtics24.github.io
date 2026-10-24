@@ -44,7 +44,7 @@
     if(!box)return;
     if(!me){box.innerHTML='<p class="save-state">כדי להוסיף חברים צריך קודם לשמור שם בפרופיל.</p>';return;}
     box.innerHTML=`<form class="add-link-form" onsubmit="return false"><label>חיפוש חברים<input id="fr-q" maxlength="60" autocomplete="off" placeholder="התחילי להקליד שם"></label></form>
-      <p class="save-state">מוצגים רק מי שאישרו להופיע בחיפוש.</p><div id="fr-results"></div>`;
+      <p class="save-state">חיפוש לפי תחילת שם מציג רק מי שהפעילו זאת בהגדרות. שם מלא מדויק עובד כמו קודם.</p><div id="fr-results"></div>`;
     const out=box.querySelector('#fr-results'),inp=box.querySelector('#fr-q');let timer=0,seq=0;
     async function run(){
       const q=inp.value.replace(/\s+/g,' ').trim();const my=++seq;
