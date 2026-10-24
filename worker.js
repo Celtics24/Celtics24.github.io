@@ -164,7 +164,7 @@ async function alreadySent(env, endpointHash, day, type) {
   return (await env.SUBS.get(`log:${endpointHash}:${day}:${type}`)) !== null;
 }
 async function markSent(env, endpointHash, day, type) {
-  await env.SUBS.put(`log:${endpointHash}:${day}:${type}`, '1', { expirationTtl: 60 * 60 * 48 });
+  try { await env.SUBS.put(`log:${endpointHash}:${day}:${type}`, '1', { expirationTtl: 60 * 60 * 48 }); } catch (e) { /* quota: skip the log, keep the reminder run alive */ }
 }
 async function endpointHash(endpoint) {
   const digest = await crypto.subtle.digest('SHA-256', te.encode(endpoint));
@@ -348,18 +348,23 @@ async function notifyOwnerNewUser(env,first,last){
 async function profileKey(env,code){const key=await syncKey(code);const canonical=await env.SUBS.get(`alias:${key.slice(5)}`);return canonical?`sync:${canonical}`:key;}
 // KV counters are best-effort across locations. Local counters cover bursts per isolate.
 const accessCounters=new Map();
+// Rate counters live in a SQLite-backed Durable Object instance: one strict global count,
+// durable across restarts/eviction, no KV writes. Fail CLOSED: if the limiter cannot be
+// reached the error propagates and the request gets a retryable 503.
+async function strictLimit(env,key,max,windowSec){
+  if(!env.OCR_QUOTA)throw Error('limiter unavailable');
+  const stub=env.OCR_QUOTA.get(env.OCR_QUOTA.idFromName('limit-v1'));
+  const r=await stub.fetch('https://limit/hit',{method:'POST',body:JSON.stringify({limit:{key,max,win:windowSec}})});
+  if(!r.ok)throw Error('limiter error');
+  const j=await r.json();
+  if(typeof j.over!=='boolean')throw Error('bad limiter reply');
+  return j.over;
+}
 async function accessLimit(request,env,path){
   const ip=request.headers.get('CF-Connecting-IP')||'unknown';
-  const bucket=Math.floor(Date.now()/900000);
   const group=path==='/sync/create'?'create':path.startsWith('/auth/')?'auth':'access';
   const max=group==='create'?8:group==='auth'?12:180;
-  const key=`limit:${await endpointHash(ip)}:${bucket}:${group}`;
-  const local=accessCounters.get(key)||0;
-  const remote=Number(await env.SUBS.get(key)||0);
-  const count=Math.max(local,remote)+1;
-  accessCounters.set(key,count);if(accessCounters.size>5000)accessCounters.clear();
-  if(count>max)return true;
-  await env.SUBS.put(key,String(count),{expirationTtl:1800});return false;
+  return strictLimit(env,`${await endpointHash(ip)}:${group}`,max,900);
 }
 
 // One global SQLite Durable Object: counters only, never photos or transcription.
@@ -368,6 +373,14 @@ export class OcrQuota {
   async alarm(){await this.state.storage.deleteAll();}
   async fetch(request){
     const b=await request.json();let result;
+    if(b.limit){
+      const L=b.limit,win=Math.max(1,Math.min(3600,Number(L.win)||900))*1000,bucket=Math.floor(Date.now()/win);
+      const sql=this.state.storage.sql;
+      sql.exec('CREATE TABLE IF NOT EXISTS hits(k TEXT PRIMARY KEY, b INTEGER NOT NULL, n INTEGER NOT NULL)');
+      const row=sql.exec('INSERT INTO hits(k,b,n) VALUES(?,?,1) ON CONFLICT(k) DO UPDATE SET n=CASE WHEN b=excluded.b THEN n+1 ELSE 1 END, b=excluded.b RETURNING n',String(L.key).slice(0,200),bucket).one();
+      if(Math.random()<0.002)sql.exec('DELETE FROM hits WHERE b<?',bucket-1);
+      return Response.json({over:row.n>Number(L.max)});
+    }
     await this.state.storage.transaction(async tx=>{
       const now=Date.now(),day=new Date().toISOString().slice(0,10);
       let q=await tx.get('quota')||{day,total:0,users:{},until:0,lease:''};
@@ -451,11 +464,7 @@ function frRandom(n) { const b = crypto.getRandomValues(new Uint8Array(n)); let 
 const frTag = fid => String(fid).slice(-4);
 const frPub = (fid, s) => ({ fid, tag: frTag(fid), first: s.first, last: s.last });
 async function frLimit(env, id, group, max) {
-  const key = `limit:fr:${group}:${id}:${Math.floor(Date.now() / 900000)}`;
-  const n = Number(await env.SUBS.get(key) || 0) + 1;
-  if (n > max) return true;
-  await env.SUBS.put(key, String(n), { expirationTtl: 1800 });
-  return false;
+  return strictLimit(env, `fr:${group}:${id}`, max, 900);
 }
 async function frGetSocial(env, hash) { return await env.SUBS.get(`social:${hash}`, 'json'); }
 async function frGetFr(env, hash) {
@@ -717,6 +726,10 @@ async function handleFriends(request, env, url) {
 
 export default {
   async fetch(request, env) {
+    try { return await this.handle(request, env); }
+    catch (e) { return jsonResponse({ error: 'busy' }, 503, env); }
+  },
+  async handle(request, env) {
     const url = new URL(request.url);
     if(request.method==='POST' && (url.pathname.startsWith('/sync/') || url.pathname.startsWith('/content/') || url.pathname.startsWith('/auth/') || url.pathname.startsWith('/owner/'))) {
       if(Number(request.headers.get('Content-Length')||0)>220000)return jsonResponse({error:'too large'},413,env);
