@@ -373,10 +373,11 @@ function settingsHtml(){
   <header class="file-header"><h1 class="file-title">הגדרות</h1></header>
   <section class="group"><h2 class="group-label">צבע האפליקציה</h2><div id="theme-picker"></div></section><section class="group"><h2 class="group-label">שפה · Language</h2><div id="language-picker"></div></section><section class="group"><details class="fold"><summary>אבטחת גישה</summary><div id="security-settings"></div></details></section><section class="group"><details class="fold"><summary>מערכת השעות</summary><div id="timetable-settings"></div></details></section>
   <section class="group"><details class="fold"><summary>חיבור בין מכשירים</summary><div id="sync-card"></div></details></section>
+  <section class="group"><details class="fold"><summary>ייבוא מבחנים מיומן גוגל</summary><div id="calendar-card"></div></details></section>
   <section class="group"><h2 class="group-label">פרופיל</h2><div id="friends-profile"></div></section>
   <section class="group"><h2 class="group-label">התראות</h2><div id="reminders-card"></div></section>
   <section class="group" id="owner-group" hidden><details class="fold"><summary>ניהול האפליקציה</summary><div id="owner-admin"></div></details></section>
-  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><details class="fold"><summary>מדיניות פרטיות</summary><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. קבצים מקושרים נשארים בדרייב ובהרשאות שלו. שם פרטי ושם משפחה שנשמרים בפרופיל נראים לאחרים רק אם בחרת להיות ניתנת לחיפוש. אם הפעלת גם חיפוש לפי תחילת השם והצעות, יוצגו רק שם פרטי ואות ראשונה של שם המשפחה, ולמי שמציעים אותה גם מספר החברים המשותפים בלבד. חברים שאישרת רואים שמות של מחברות וסיכומים בלבד, ותוכן עובר רק באישור על כל פריט, כעותק שנשאר אצל מי שקיבלה. סיכומי טקסט מצילום נשמרים בפרופיל. צילום לוח נשלח רק באישור לעיבוד זמני ב-Cloudflare, ללא שמירת התמונה באפליקציה או ביומני תוכן. השירות אינו משתמש בתוכן לאימון, בכפוף לחריגי אבטחה וחוק. PDF נוצר במכשיר. מוני שימוש יומיים ללא התמונה או הטקסט נשמרים בנפרד עד לאיפוס היומי (00:02 UTC).</p><p>מנהלת האפליקציה (בעלת האתר) רואה רשימת פרופילים עם שם, תאריך הצטרפות ומצב חסימה בלבד, ויכולה להשבית פרופיל; אין לה גישה לתוכן של משתמשים. קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p></details><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
+  <section class="group privacy-note"><h2 class="group-label">פרטיות</h2><details class="fold"><summary>מדיניות פרטיות</summary><p>המקצועות, הקישורים, מערכת השעות, העדפות הצבע ונתוני הלמידה נשמרים בפרופיל בשרת ובמכשירים שחוברו אליו. הרשמה להתראות שומרת גם כתובת משלוח טכנית. קבצים מקושרים נשארים בדרייב ובהרשאות שלו. שם פרטי ושם משפחה שנשמרים בפרופיל נראים לאחרים רק אם בחרת להיות ניתנת לחיפוש. אם הפעלת גם חיפוש לפי תחילת השם והצעות, יוצגו רק שם פרטי ואות ראשונה של שם המשפחה, ולמי שמציעים אותה גם מספר החברים המשותפים בלבד. חברים שאישרת רואים שמות של מחברות וסיכומים בלבד, ותוכן עובר רק באישור על כל פריט, כעותק שנשאר אצל מי שקיבלה. סיכומי טקסט מצילום נשמרים בפרופיל. צילום לוח נשלח רק באישור לעיבוד זמני ב-Cloudflare, ללא שמירת התמונה באפליקציה או ביומני תוכן. ייבוא מיומן גוגל הוא אופציונלי, לקריאה בלבד וביומנים שבבעלותך: האפליקציה קוראת כותרות ותאריכים רק כדי להציג לך מבחנים לבחירה, ורק מה שסימנת נשמר בפרופיל כמבחן, כמו מבחן שהוספת ידנית, ולא נראה לחברים. מידע מהיומן לא נמכר, לא משמש לפרסום ולא נקרא על ידי בני אדם, והגישה מתבטלת מיד אחרי הקריאה. השירות אינו משתמש בתוכן לאימון, בכפוף לחריגי אבטחה וחוק. PDF נוצר במכשיר. מוני שימוש יומיים ללא התמונה או הטקסט נשמרים בנפרד עד לאיפוס היומי (00:02 UTC).</p><p>מנהלת האפליקציה (בעלת האתר) רואה רשימת פרופילים עם שם, תאריך הצטרפות ומצב חסימה בלבד, ויכולה להשבית פרופיל; אין לה גישה לתוכן של משתמשים. קוד החיבור ומפתח השחזור מעניקים גישה לפרופיל. שמרו אותם פרטיים. מחיקת הפרופיל מסירה את נתוניו הפעילים בשרת ואת העותק במכשיר הזה, ולא מוחקת קבצים בדרייב, גיבויים פרטיים או עותקים במכשירים אחרים. אין כאן מערכת חשבונות מלאה.</p><p>תוכן ישן עשוי עדיין להופיע בהיסטוריית הקוד הציבורית, שטרם נוקתה.</p></details><button class="file-button danger" id="delete-profile">מחיקת פרופיל</button><div id="delete-confirm"></div></section>`;
 }
 function homeHtml(){
   return `
@@ -478,6 +479,7 @@ function render(){
   if(window.renderPreferences)window.renderPreferences();
   if(window.bindAddFile)window.bindAddFile();
   if(window.bindExams)window.bindExams();
+  if(window.renderCalendarCard)window.renderCalendarCard();
   if(window.renderFriendsSettings)window.renderFriendsSettings();
   if(window.renderOwnerAdmin)window.renderOwnerAdmin();
   if(window.bindBoardPhoto)window.bindBoardPhoto();
@@ -505,9 +507,10 @@ render();
 <script src="board.js?v=20261024dr1"></script>
 <script src="notebooks.js?v=20261024c1"></script>
 <script src="exams.js?v=20261024cal1"></script>
-<script src="friends.js?v=20261024fr7"></script>
+<script src="friends.js?v=20261024fr8"></script>
+<script src="calendar.js?v=20261024gc1"></script>
 <script src="admin.js?v=20261023ad1"></script>
 <script src="push.js?v=20261023em2"></script>
-<script src="i18n.js?v=20261024i12"></script>
+<script src="i18n.js?v=20261024i14"></script>
 </body>
 </html>
