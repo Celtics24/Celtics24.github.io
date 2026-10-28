@@ -2,7 +2,7 @@
 (()=>{
  const API='https://study-coach-push.y0546367987.workers.dev',E=window.esc;
  // Set the chosen name before publication. An empty name keeps the feature hidden.
- const NAME='Conversation with ai coach';let history=[],summaryId='',controller=null,generation=0;
+ const NAME='ai coach';let history=[],summaryId='',controller=null,generation=0;
  const icon='<svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z"/></svg>';
  window.studyChatHome=()=>NAME?`<a class="last-nb chat-home" href="#/chat">${icon}<span class="last-nb-text"><strong>${E(NAME)}</strong><small>הסבר, דוגמה ותרגול על סיכום שתבחרי</small></span><span aria-hidden="true">‹</span></a>`:'';
  function reset(){generation++;controller?.abort();controller=null;history=[];summaryId='';}
