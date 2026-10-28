@@ -173,7 +173,7 @@ function translateString(s){
   return lead+out+trail;
 }
 // Elements whose text is user content - never translated, even on a dictionary match.
-const SKIP='.summary-name,.summary-note,.subject-name,.exam-name,.subj-exam-name,.sprint-name,.next-name,.month-exam,.exam-chip,.notebook-cover strong,.notebook-paper,.nb-page-title,.last-nb-text strong,.owner-meta strong,.fr-tag,input,textarea,script,style';
+const SKIP='[data-language-fixed],.summary-name,.summary-note,.subject-name,.exam-name,.subj-exam-name,.sprint-name,.next-name,.month-exam,.exam-chip,.notebook-cover strong,.notebook-paper,.nb-page-title,.last-nb-text strong,.owner-meta strong,.fr-tag,input,textarea,script,style';
 function translateNode(node){
   if(node.nodeType===3){const v=translateString(node.nodeValue);if(v!==node.nodeValue)node.nodeValue=v;return;}
   if(node.nodeType!==1)return;
