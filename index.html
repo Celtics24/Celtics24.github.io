@@ -13,6 +13,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap">
 <style>
 :root{
   --ds-page:#fbfaf9; --ds-white:#ffffff; --ds-ink:#251f21; --ds-ink-2:#585254;
@@ -194,6 +195,16 @@ body{
 .tab{position:relative}.tab.has-badge::after{content:'';position:absolute;top:8px;inset-inline-start:calc(50% + 6px);width:9px;height:9px;border-radius:50%;background:var(--pink-700)}.fr-list{display:flex;flex-direction:column}.fr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--ds-hairline);text-decoration:none;color:inherit}.fr-col{flex-direction:column;align-items:stretch}.fr-name{font-weight:600;font-size:14px;color:var(--ds-ink)}.fr-tag{font-size:11px;color:var(--ds-ink-3);font-weight:600}.fr-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.fr-actions .file-button{min-height:40px;padding:0 14px}.fr-link{background:none;border:0;font:inherit;font-size:13px;color:var(--ds-ink-2);text-decoration:underline;min-height:40px;cursor:pointer}.fr-back{font-size:13px;color:var(--ds-ink-2)}.fr-actions select{min-height:40px;border-radius:12px;border:1px solid var(--pink-200);padding:0 8px;font:inherit;background:#fff;color:var(--ds-ink)}:root[data-theme="dark"] .fr-actions select{background:var(--ds-white);color:var(--ds-ink)}.onboard .onboard-check{display:flex;align-items:center;gap:10px;font-size:14px}.onboard .onboard-check input{width:22px;min-height:22px;height:22px;padding:0;flex:none}
 
 .chat-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-heading h1{overflow-wrap:anywhere;font-size:24px;margin:12px 0}.chat-back{color:var(--pink-700);text-decoration:none;display:inline-block;padding:10px 0}.chat-source{display:grid;gap:8px;background:var(--pink-50);border:1px solid var(--pink-200);border-radius:18px;padding:16px;margin:18px 0}.chat-source label{font-size:14px;font-weight:600}.chat-source select{width:100%;border:1px solid var(--pink-200);border-radius:12px;background:var(--ds-white);font:inherit;color:var(--ds-ink);padding:12px}.chat-source details{font-size:13px}.chat-source details p{font-size:14px;margin:10px 0}.chat-messages{min-height:200px;padding:16px 0;display:grid;gap:12px}.chat-empty{text-align:center;color:var(--ds-ink-2);padding:20px 8px}.chat-empty h2{font-size:18px;color:var(--ds-ink);margin:12px 0 6px}.chat-empty p{font-size:14px;line-height:1.7;margin:0}.chat-mark{display:inline-flex;color:var(--pink-700);padding:12px;border-radius:50%;background:var(--pink-50)}.chat-starters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}.chat-starters button{font:inherit;font-size:13px;background:var(--ds-white);border:1px solid var(--pink-200);color:var(--pink-700);border-radius:20px;padding:11px 14px;min-height:44px}.chat-composer{background:var(--ds-white);padding:12px 0;display:grid;gap:10px;border-top:1px solid var(--pink-200)}.chat-composer .review-consent{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.6;color:var(--ds-ink-2)}.chat-composer input{margin-top:4px}.chat-input-row{display:flex;gap:8px;align-items:flex-end}.chat-input-row textarea{min-width:0;flex:1;border:1px solid var(--pink-200);border-radius:16px;padding:12px;font:inherit;font-size:15px;resize:vertical;background:var(--pink-50);color:var(--ds-ink)}.chat-input-row button{min-height:48px}.chat-composer #chat-status{font-size:12px;color:var(--ds-ink-2);margin:0;line-height:1.6}.chat-bubble{padding:14px 16px;border-radius:18px;line-height:1.8;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--pink-200)}.chat-bubble.user{background:var(--pink-50);margin-left:26px}.chat-bubble.assistant{background:var(--ds-white);margin-right:18px}.chat-speaker{display:block;font-size:11px;color:var(--ds-ink-2);margin-bottom:6px}.chat-heading .file-button{font-size:12px;padding:10px 12px}
+
+/* Approved six-theme visual system, 28 October 2026. */
+:root,:root[data-theme="pink"]{--ds-page:#fffbfc;--ds-ink:#30262c;--ds-ink-2:#705b65;--ds-ink-3:#705b65;--ds-hairline:#e9d5de;--pink-50:#fffbfc;--pink-100:#f8eaf0;--pink-200:#e9d5de;--pink-300:#d4a9bb;--pink-600:#9b4264;--pink-700:#9b4264}
+:root[data-theme="blue"]{--ds-page:#f9fbff;--ds-ink:#243247;--ds-ink-2:#586a80;--ds-ink-3:#586a80;--ds-hairline:#d7e2ef;--pink-50:#f9fbff;--pink-100:#e8f0fa;--pink-200:#d7e2ef;--pink-300:#a7bfdc;--pink-600:#315f91;--pink-700:#315f91}
+:root[data-theme="purple"]{--ds-page:#fcfaff;--ds-ink:#342b40;--ds-ink-2:#6f5e7d;--ds-ink-3:#6f5e7d;--ds-hairline:#e3d8ee;--pink-50:#fcfaff;--pink-100:#f0eaf7;--pink-200:#e3d8ee;--pink-300:#c4afd8;--pink-600:#71508f;--pink-700:#71508f}
+:root[data-theme="mint"]{--ds-page:#f9fcfa;--ds-ink:#293b33;--ds-ink-2:#5a7065;--ds-ink-3:#5a7065;--ds-hairline:#d2e6dc;--pink-50:#f9fcfa;--pink-100:#e6f2ec;--pink-200:#d2e6dc;--pink-300:#a8ccbb;--pink-600:#326c59;--pink-700:#326c59}
+:root[data-theme="burgundy"]{--ds-page:#fcf8fa;--ds-ink:#38242b;--ds-ink-2:#765864;--ds-ink-3:#765864;--ds-hairline:#e4cdd5;--pink-50:#fcf8fa;--pink-100:#f1e3e8;--pink-200:#e4cdd5;--pink-300:#c29aa9;--pink-600:#681e35;--pink-700:#681e35}
+:root[data-theme="dark"]{--ds-page:#151c28;--ds-white:#1c2736;--ds-ink:#edf1f8;--ds-ink-2:#b4c0d2;--ds-ink-3:#b4c0d2;--ds-hairline:#3b4a5e;--pink-50:#151c28;--pink-100:#263447;--pink-200:#3b4a5e;--pink-300:#647b98;--pink-600:#bad1ee;--pink-700:#bad1ee}
+body,input,textarea,select,button{font-family:Heebo,-apple-system,Arial,sans-serif}.file-card{background:var(--ds-page);box-shadow:none}.file-title{font-size:28px;font-weight:600;letter-spacing:-.4px}.group-label{font-size:17px;font-weight:500}.file-button{border-radius:11px;min-height:44px;font-weight:500}.tabs-inner{background:var(--ds-white);border-top:1px solid var(--pink-200);gap:3px}.tab{color:var(--ds-ink-2);font-weight:500;border-radius:11px}.tab.is-active{font-weight:600}.tab-ico{stroke-width:1.6}.next-exam,.streak-card,.last-nb{background:var(--pink-100);border:1px solid var(--pink-200);border-radius:18px;box-shadow:none}.next-exam{padding:20px}.next-num{font-size:42px;font-weight:600}.next-word,.next-name{font-weight:600}.streak-num{font-weight:600;animation:none}.streak-card{margin-top:18px}.streak-hint{display:none}.last-nb:not(.chat-home){background:var(--ds-white);margin-top:18px}.last-nb:not(.chat-home)>.tab-ico{border-inline-start:3px solid var(--pink-700);padding-inline-start:5px;width:36px;height:42px}.last-nb-text strong{font-weight:500}.chat-home{min-height:150px;padding:22px;margin:0 0 20px;align-items:center;background:var(--pink-100)}.chat-home>.tab-ico{width:38px;height:38px}.chat-home .last-nb-text strong{font-size:31px;font-weight:600;direction:ltr;text-align:start}.chat-home .last-nb-text small{display:none}.chat-home>span:last-child{margin-inline-start:auto;font-size:25px;color:var(--pink-700)}.summary-row{position:relative;border-color:var(--pink-200);border-inline-start:3px solid var(--subject-accent,var(--pink-700));background:var(--ds-white)}.back-link,.fr-back{display:flex!important;width:max-content;max-width:100%;margin:0 auto 14px 0!important;min-height:44px;align-items:center;gap:6px;padding:8px 10px!important;background:transparent!important;border:0!important;color:var(--pink-700);font-size:14px;text-decoration:none;direction:ltr}.back-link:before,.fr-back:before{content:'←';font-size:20px}.sc-back{display:flex;width:max-content;margin:0 auto 12px 0;min-height:44px;align-items:center;gap:8px;color:var(--pink-700);text-decoration:none;font-size:14px;direction:ltr}.sc-back svg{width:20px;height:20px}.subject-head-name{font-size:26px;font-weight:600}.studied-toggle{min-height:44px}.studied-toggle.is-on{animation:sc-check .2s ease-out}@keyframes sc-check{from{transform:scale(.96)}to{transform:scale(1)}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}@media(max-width:360px){.tabs-inner .tab{font-size:10px;padding-inline:2px}.chat-home{padding:18px;min-height:140px}.chat-home .last-nb-text strong{font-size:29px}}
+
 </style>
 </head>
 <body>
@@ -203,7 +214,7 @@ body{
 <a class="tab" data-tab="summaries" href="#/summaries"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="4.5" height="15" rx="1"/><rect x="10.5" y="4.5" width="4.5" height="15" rx="1"/><path d="m16.8 6.2 3.4 1-3.6 12-3.2-1"/></svg>סיכומים</a>
 <a class="tab" data-tab="notebooks" href="#/notebooks"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3.5" width="12.5" height="17" rx="2"/><path d="M6 8H3.5M6 12H3.5M6 16H3.5M10 8.5h5.5M10 12h5.5"/></svg>מחברות</a>
 <a class="tab" data-tab="exams" href="#/exams"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>מבחנים</a>
-<a class="tab" data-tab="friends" href="#/friends"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9.5" r="2.3"/><path d="M16.2 14.3c2.4.2 4.3 1.8 4.3 4.7"/></svg>חברים</a>
+<a class="tab" data-language-fixed="he" data-tab="friends" href="#/friends"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9.5" r="2.3"/><path d="M16.2 14.3c2.4.2 4.3 1.8 4.3 4.7"/></svg>חברים</a>
 <a class="tab" data-tab="settings" href="#/settings"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.25 14.1 4.1l1.7-1.3 2 2-1.3 1.7.85 2.1 2 .6v2.8l-2 .6-.85 2.1 1.3 1.7-2 2-1.7-1.3-2.1.85-.6 2h-2.8l-.6-2-2.1-.85-1.7 1.3-2-2 1.3-1.7L3.25 12l-2-.6V8.6l2-.6L4.1 5.9 2.8 4.2l2-2 1.7 1.3 2.1-.85.6-2h2.8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>הגדרות</a>
 </div></nav>
 <script>
@@ -344,11 +355,11 @@ function examBoardHtml(){
 function summaryRowHtml(s){
   const studied=store.studied;
   const on=!!studied[s.id];
-  return `<div class="summary-row ${on?'is-studied':''}" ${on?`style="background:${s.color.bg};border-color:${s.color.border}"`:''}>
+  return `<div class="summary-row ${on?'is-studied':''}" style="--subject-accent:${s.color.accent};${on?`background:${s.color.bg};border-color:${s.color.border}`:''}">
     <span class="summary-top">
       <span class="summary-body"><a class="summary-name file-hover-wrap" href="${s.type==='text'?'#/text/'+s.id:s.url}" ${s.type==='text'?'':'target="_blank" rel="noreferrer"'}><span class="file-hover-underline">${s.name}</span></a>
       <span class="summary-note">${s.note}</span></span></span>
-    <span class="summary-actions"><button type="button" class="studied-toggle ${on?'is-on':''}" ${on?`style="background:${s.color.accent};border-color:${s.color.accent}"`:''} data-toggle="${s.id}" aria-pressed="${on}">${on?'למדתי!':'למדתי?'}</button></span>
+    <span class="summary-actions"><button type="button" class="studied-toggle ${on?'is-on':''}" ${on?`style="background:${s.color.accent};border-color:${s.color.accent}"`:''} data-toggle="${s.id}" aria-pressed="${on}">${on?'סיימתי ללמוד ✓':'סיימתי ללמוד'}</button></span>
   </div>`;
 }
 function summaryListHtml(items){
@@ -383,12 +394,11 @@ function settingsHtml(){
 }
 function homeHtml(){
   return `
-  <header class="file-header"><h1 class="file-title">Study Coach</h1><div class="file-fact">עודכן 20 באוקטובר</div></header>
   ${window.studyChatHome?window.studyChatHome():''}
   ${nextExamHtml()}
-  ${sprintHtml()}
-  ${lastNotebookHtml()}
   ${streakHtml()}
+  ${lastNotebookHtml()}
+  ${sprintHtml()}
   `;
 }
 function summariesPageHtml(){
@@ -476,6 +486,8 @@ function render(){
     app.innerHTML=homeHtml()+closing;
   }
   window.scrollTo(0,0);
+  const destinations={'#/settings':'#/','#/summaries':'#/','#/exams':'#/','#/notebooks':'#/','#/friends':'#/'};
+  if(destinations[hash])app.insertAdjacentHTML('afterbegin',`<a class="sc-back" href="${destinations[hash]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 12H4m7-7-7 7 7 7"/></svg><span>חזור</span></a>`);
   if(window.renderLanguagePicker)window.renderLanguagePicker();
   if(window.renderRemindersCard)window.renderRemindersCard();
   if(window.renderSyncCard)window.renderSyncCard();
@@ -511,10 +523,10 @@ render();
 <script src="board.js?v=20261027multi1"></script>
 <script src="notebooks.js?v=20261024c1"></script>
 <script src="exams.js?v=20261024cal1"></script>
-<script src="friends.js?v=20261028friends-private1"></script>
+<script src="friends.js?v=20261028design1"></script>
 <script src="calendar.js?v=20261024gc2"></script>
 <script src="admin.js?v=20261023ad1"></script>
 <script src="push.js?v=20261023em2"></script>
-<script src="i18n.js?v=20261027chat1"></script>
+<script src="i18n.js?v=20261028design1"></script>
 <script src="chat.js?v=20261027chat1"></script></body>
 </html>
