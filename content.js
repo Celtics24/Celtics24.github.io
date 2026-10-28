@@ -3,7 +3,7 @@
   const API='https://study-coach-push.y0546367987.workers.dev';
   let current=null, busy=false, error='', mode='welcome', loading=false;
   window.userContentReady=false;
-  const themes={pink:{label:'ורוד',light:'#ffe3ef',ink:'#c2255c'},blue:{label:'כחול',light:'#e0efff',ink:'#235b96'},purple:{label:'סגול',light:'#eee5ff',ink:'#6841a3'},mint:{label:'ירוק מנטה',light:'#def5eb',ink:'#276b52'},burgundy:{label:'יין',light:'#e9d0d5',ink:'#4a0d1b'},dark:{label:'כהה',light:'#243349',ink:'#e8effb'}};
+  const themes={"pink": {"label": "ורוד", "light": "#FFECEE", "ink": "#55323F", "swatches": ["#FFECEE", "#FFE0E6", "#FFD4DE", "#FFC9D6", "#FEBDCE", "#FEB1C6"]}, "blue": {"label": "כחול", "light": "#DBECF4", "ink": "#194569", "swatches": ["#194569", "#5F84A2", "#91AEC4", "#B7D0E1", "#CADEED", "#DBECF4"]}, "purple": {"label": "סגול", "light": "#E0B6E4", "ink": "#47034E", "swatches": ["#E0B6E4", "#9F5EA5", "#7E3285", "#5D0565", "#47034E"]}, "mint": {"label": "ירוק", "light": "#DDEAD1", "ink": "#4B6043", "swatches": ["#4B6043", "#658354", "#75975E", "#87AB69", "#95BB72", "#A3C585", "#B3CF99", "#C7DDB5", "#DDEAD1"]}, "burgundy": {"label": "אדום", "light": "#D77A7D", "ink": "#461220", "swatches": ["#D77A7D", "#B23A48", "#8C2F39", "#69212D", "#461220"]}, "dark": {"label": "כהה", "light": "#0A1C3A", "ink": "#D4D4D8", "swatches": ["#D4D4D8", "#A1A5BE", "#757EA4", "#505D89", "#32436F", "#1A2D55", "#0A1C3A"]}};
   function code(){return localStorage.getItem('sync.code.v1')||'';}
   function cacheKey(){return 'content.profile.v2:'+code();}
   window.draftGuard={
@@ -17,7 +17,7 @@
   function valid(c){return c&&Array.isArray(c.subjects)&&Array.isArray(c.exams)&&Array.isArray(c.summaries);}
   function apply(c){
     current=c;
-    const col=k=>C[k]||C.pink;
+    const col=k=>({bg:'var(--pink-100)',border:'var(--pink-200)',accent:'var(--pink-700)'});
     const text=o=>{const r={...o};for(const k of ['name','emoji','note','detail'])if(k in r)r[k]=esc(r[k]);if(r.url&&!/^https:\/\//.test(r.url))r.url='#';return r;};
     subjects=c.subjects.map(s=>({...text(s),color:col(s.color)}));
     exams=c.exams.map(e=>({...text(e),color:e.color?col(e.color):undefined}));
@@ -125,7 +125,7 @@
     const security=document.getElementById('security-settings');
     if(security){security.innerHTML='<button class="file-button" id="save-recovery">שמירת מפתח שחזור</button><p class="save-state" id="recovery-status">המפתח מאפשר כניסה אם קוד החיבור אבד. שמרו אותו במקום פרטי.</p>';security.querySelector('button').addEventListener('click',async e=>{e.target.disabled=true;try{const j=await api('/auth/recovery/create',{code:code()});const blob=new Blob(['Study Coach recovery key\n'+j.recoveryKey+'\nKeep private.'],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Study-Coach-recovery.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);document.getElementById('recovery-status').textContent='המפתח החדש נשמר בקובץ. מפתח קודם בוטל.';}catch{document.getElementById('recovery-status').textContent='לא ניתן ליצור מפתח כרגע. נסו שוב.';}e.target.disabled=false;});}
     const selected=current.preferences?.theme||'pink';
-    picker.innerHTML=`<div class="theme-options">${Object.entries(themes).map(([name,t])=>`<button class="theme-option" data-theme-choice="${name}" aria-pressed="${selected===name}" style="background:${t.light};color:${t.ink}">${t.label}</button>`).join('')}</div><p class="save-state" id="theme-status"></p>`;
+    picker.innerHTML=`<div class="theme-options">${Object.entries(themes).map(([name,t])=>`<button class="theme-option" data-theme-choice="${name}" aria-pressed="${selected===name}" style="background:${t.light};color:${t.ink}">${t.label}<span class="palette-strip" aria-hidden="true">${t.swatches.map(c=>`<i style="background:${c}"></i>`).join('')}</span></button>`).join('')}</div><p class="save-state" id="theme-status"></p>`;
     picker.querySelectorAll('[data-theme-choice]').forEach(b=>b.addEventListener('click',async()=>{
       picker.querySelectorAll('button').forEach(x=>x.disabled=true);
       const name=b.dataset.themeChoice;const old=current.preferences?.theme||'pink';theme(name);
