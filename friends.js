@@ -74,7 +74,7 @@
     box.querySelector('#fr-leave')?.addEventListener('click',async ev=>{if(!confirm('להסיר את הפרופיל החברתי? חברים, בקשות ואישורים יימחקו. הסיכומים והמחברות שלך לא ייפגעו.'))return;ev.target.disabled=true;
       try{await api('/friends/leave',{});me=null;paintProfile(box);paintAdd(document.getElementById('friends-add'));}catch(err){msg(errText(err));ev.target.disabled=false;}});
   }
-  const rowHtml=(r,extra)=>`<div class="fr-row"><span class="fr-name">${avatar(r)}<span class="fr-person-text">${who(r)}${extra||''}</span></span>${r.status==='sent'?'<span class="save-state">נשלחה בקשה</span>':r.status==='incoming'?'<span class="save-state">שלחו לך בקשה, מופיעה למטה</span>':`<button class="file-button" data-variant="secondary" type="button" data-req="${e(r.fid)}">בקשת חברות</button>`}</div>`;
+  const rowHtml=(r,extra)=>`<div class="fr-row"><span class="fr-name">${avatar(r)}<span class="fr-person-text">${who(r)}${extra||''}</span></span>${r.status==='sent'?'<span class="save-state">נשלחה בקשה</span>':r.status==='incoming'?'<span class="save-state">Incoming request</span>':`<button class="file-button" data-variant="secondary" type="button" data-req="${e(r.fid)}">בקשת חברות</button>`}</div>`;
   function bindReq(out){out.querySelectorAll('[data-req]').forEach(bt=>bt.addEventListener('click',async()=>{bt.disabled=true;try{await api('/friends/request',{fid:bt.dataset.req});bt.outerHTML='<span class="save-state">נשלחה בקשה</span>';}catch(err){bt.disabled=false;out.insertAdjacentHTML('beforeend',`<p class="form-error">${errText(err)}</p>`);}}));}
   function paintAdd(box){
     if(!box)return;
@@ -122,9 +122,9 @@
     window.friendsPending={incoming:j.incoming.length,itemRequests:j.itemRequests.filter(x=>x.status==='pending').length};badge();
     const sec=(t,h)=>h?`<section class="group"><h2 class="group-label">${t}</h2>${h}</section>`:'';
     const incoming=j.incoming.map(p=>`<div class="fr-row"><span class="fr-name">${person(p)}</span><span class="fr-actions"><button class="file-button" type="button" data-act="accept" data-fid="${e(p.fid)}">אישור</button><button class="file-button" data-variant="secondary" type="button" data-act="decline" data-fid="${e(p.fid)}">דחייה</button><button class="fr-link" type="button" data-act="block" data-fid="${e(p.fid)}">חסימה</button></span></div>`).join('');
-    const reqIn=j.itemRequests.filter(x=>x.status==='pending').map(g=>`<div class="fr-row fr-col"><span class="fr-name">${who(g.who)} requests ${g.kind==='notebook'?'the notebook':'the summary'} <strong data-fr-content class="summary-name" dir="auto">${e(g.title)}</strong></span>${g.isLink?'<span class="save-state">זה קישור לדרייב. ההרשאות בדרייב לא משתנות.</span>':''}<span class="save-state">האישור תקף 7 ימים, ומתקבל עותק אחד שנשאר אצלה.</span><span class="fr-actions"><button class="file-button" type="button" data-gact="approve" data-gid="${e(g.id)}">אישור</button><button class="file-button" data-variant="secondary" type="button" data-gact="decline" data-gid="${e(g.id)}">דחייה</button></span></div>`).join('');
+    const reqIn=j.itemRequests.filter(x=>x.status==='pending').map(g=>`<div class="fr-row fr-col"><span class="fr-name">${who(g.who)} requests ${g.kind==='notebook'?'the notebook':'the summary'} <strong data-fr-content class="summary-name" dir="auto">${e(g.title)}</strong></span>${g.isLink?'<span class="save-state">Drive permissions unchanged.</span>':''}<span class="save-state">7-day approval · Recipient keeps one copy.</span><span class="fr-actions"><button class="file-button" type="button" data-gact="approve" data-gid="${e(g.id)}">אישור</button><button class="file-button" data-variant="secondary" type="button" data-gact="decline" data-gid="${e(g.id)}">דחייה</button></span></div>`).join('');
     const mine=j.myRequests.map(g=>{const st=g.status;let right='';
-      if(st==='approved')right=`<select data-sel="${e(g.id)}" aria-label="מקצוע">${subjects.map(s=>`<option value="${e(s.key)}">${e(s.name)}</option>`).join('')}</select><button class="file-button" type="button" data-accept="${e(g.id)}">הוספה אליי</button>`;
+      if(st==='approved')right=`<select data-sel="${e(g.id)}" aria-label="מקצוע">${subjects.map(s=>`<option data-fr-content class="summary-name" value="${e(s.key)}">${e(s.name)}</option>`).join('')}</select><button class="file-button" type="button" data-accept="${e(g.id)}">הוספה אליי</button>`;
       else right=`<span class="save-state">${st==='pending'?'ממתין לאישור':st==='declined'?'נדחה':st==='done'?'נוסף':st==='expired'?'פג תוקף':'בוטל'}</span>`;
       return `<div class="fr-row fr-col"><span class="fr-name"><bdi data-fr-content class="summary-name">${e(g.title)}</bdi> <span class="save-state">From ${who(g.who)}</span></span><span class="fr-actions">${right}</span></div>`;}).join('');
     const friends=j.friends.map(p=>`<a class="fr-row fr-friend" href="#/friends/${e(p.fid)}"><span class="fr-name">${person(p)}</span></a>`).join('');
@@ -163,7 +163,7 @@
     }
     root.querySelectorAll('[data-pane]').forEach(b=>{
       b.onclick=()=>showPane(b.dataset.pane);
-      b.onkeydown=ev=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(ev.key))return;ev.preventDefault();const list=[...root.querySelectorAll('[data-pane]')],i=list.indexOf(b),rtl=document.documentElement.dir!=='ltr';const next=ev.key==='Home'?0:ev.key==='End'?2:(i+((ev.key==='ArrowRight')!==rtl?1:-1)+3)%3;showPane(list[next].dataset.pane);list[next].focus();};
+      b.onkeydown=ev=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(ev.key))return;ev.preventDefault();const list=[...root.querySelectorAll('[data-pane]')],i=list.indexOf(b),rtl=root.dir!=='ltr';const next=ev.key==='Home'?0:ev.key==='End'?2:(i+((ev.key==='ArrowRight')!==rtl?1:-1)+3)%3;showPane(list[next].dataset.pane);list[next].focus();};
     });
     root.querySelector('#fr-add-shortcut').onclick=()=>showPane('discover',true);
     root.querySelector('#fr-empty-add')?.addEventListener('click',()=>showPane('discover',true));
