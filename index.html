@@ -236,7 +236,43 @@ body,input,textarea,select,button{font-family:Assistant,Felix007,sans-serif!impo
 .nb-leaf{padding:24px 18px 28px;scroll-margin-top:20px;cursor:pointer;background:var(--paper)}.nb-leaf+.nb-leaf{border-top:8px solid var(--pink-200);box-shadow:none}.nb-leaf.nb-open{background:var(--paper)}.nb-leaf-head{padding-bottom:12px;border-bottom:1px solid var(--pink-200)}.nb-leaf-head h3{font-size:19px}.notebook-paper{font-size:17px;line-height:32px;background:repeating-linear-gradient(var(--paper),var(--paper) 31px,var(--page-rule) 31px,var(--page-rule) 32px)!important;color:var(--ds-ink);min-height:150px;padding-top:8px!important;overflow-wrap:anywhere}
 @media(max-width:360px){.notebook-shelf{gap:30px 18px}.notebook-cover strong{font-size:15px;left:20%;right:13%;padding:10px 6px;min-height:64px}.notebook-cover small{font-size:12px;right:14px;left:24px;bottom:16px}.notebook-cover:after{right:17px;width:12px;height:48px}}
 
-.nb-leaf[hidden]{display:none!important}.nb-book{touch-action:pan-y}.nb-pagination{display:flex;justify-content:center;align-items:center;gap:22px;margin:18px 0 24px}.nb-pagination button{min-width:52px}.nb-section-tabs{overflow:auto} :root[data-theme=purple] .notebook-cover small,:root[data-theme=burgundy] .notebook-cover small{color:#fff}.notebook-cover small{opacity:1} </style>
+.nb-leaf[hidden]{display:none!important}.nb-book{touch-action:pan-y}.nb-pagination{display:flex;justify-content:center;align-items:center;gap:22px;margin:18px 0 24px}.nb-pagination button{min-width:52px}.nb-section-tabs{overflow:auto} :root[data-theme=purple] .notebook-cover small,:root[data-theme=burgundy] .notebook-cover small{color:#fff}.notebook-cover small{opacity:1}
+/* 2026-10-28 readability: larger small text, stronger ink, full notebook page with side settings */
+:root{--ds-ink-2:#453f41;--ds-ink-3:#6d676a}
+:root[data-theme="blue"]{--ds-ink-2:#3a5069}
+:root[data-theme="purple"]{--ds-ink-2:#4d405d}
+:root[data-theme="mint"]{--ds-ink-2:#3d554b}
+:root[data-theme="burgundy"]{--ds-ink-2:#552d39}
+:root[data-theme="dark"]{--ds-ink-2:#ccd9ea;--ds-ink-3:#b3c4da}
+.tab,.tabs-inner .tab{font-size:13px}
+.exam-date span{font-size:13px}.exam-pill{font-size:12px}.month-exam{font-size:11px}
+.month-num,.month-head{font-size:14px}
+.streak-hint,.fr-tag,.chat-speaker,.nb-leaf-num{font-size:13px}
+.last-nb-text small,.caption,.closing,.pbar-text,.sprint-days,.exam-meta,.summary-note,.subject-count,.save-state,.photo-hint,.studied-toggle,.exam-chip,.exam-edit,.chat-composer .review-consent,.chat-composer #chat-status,.study-week-day small{font-size:14px}
+.owner-sub,.streak-best,.reminders-sub{font-size:14.5px}
+.file-fact,.group-label,.next-label,.next-date,.form-error,.sync-error,.fr-link,.fr-back,.settings-lead,.privacy-note p,.file-button,.owner-row .file-button,.reminders-btn,.exam-count,.chat-starters button,.subj-exam-meta,.notebook-meta,.photo-status,.board-thumb span,.chat-source details{font-size:15px}
+.exam-name,.summary-name,.subject-name,.sprint-name,.fr-name,.fold summary,.add-link-form label,.onboard label,.chat-empty p,.no-results,.chat-source label,.photo-panel label{font-size:15.5px}
+.nb-menu-item{font-size:16px}
+.notebook-cover small{font-size:15px}
+.exam-meta,.summary-note,.subject-count,.caption,.next-date,.file-fact,.settings-lead,.notebook-meta,.subj-exam-meta,.owner-sub,.month-num,.last-nb-text small,.pbar-text,.save-state,.study-week-day small,.chat-speaker{font-weight:600}
+.notebook-paper{font-size:18px}
+.nb-leaf-head h3{font-size:21px}
+.nb-stage{display:flex;gap:14px;align-items:flex-start;margin-top:6px}
+.nb-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.nb-main .nb-book{flex:1;min-height:calc(100dvh - 330px);display:flex;flex-direction:column}
+.nb-main .nb-leaf{flex:1;display:flex;flex-direction:column}
+.nb-main .nb-leaf .notebook-paper{flex:1;min-height:220px}
+.nb-main .nb-leaf-tools{margin-top:auto}
+.nb-main .nb-book>.notebook-empty{flex:1;display:grid;place-items:center}
+.nb-side{flex:none;width:134px;display:flex;flex-direction:column;gap:8px;padding:14px 10px;background:var(--pink-50);border:1px solid var(--pink-200);border-radius:16px;position:sticky;top:10px}
+.nb-side .nb-side-title{margin:0;font-size:19px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.nb-side .nb-side-meta{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--ds-ink-2)}
+.nb-side .file-button,.nb-side .nb-menu-item{display:block;width:100%;text-align:center;padding:10px 6px;font-size:14px;min-height:44px;border-radius:11px}
+.nb-side .nb-menu-item{border:1px solid var(--pink-200);background:var(--ds-white)}
+.nb-side .nb-menu-item.danger{border-color:#e1a6ae;background:#fff5f5}
+@media(min-width:700px){.nb-side{width:196px;padding:18px 14px;gap:10px}.nb-side .nb-side-title{font-size:23px}.nb-side .nb-side-meta{font-size:14px}.nb-side .file-button,.nb-side .nb-menu-item{font-size:16px}}
+@media(max-width:380px){.nb-stage{gap:10px}.nb-side{width:120px}}
+</style>
 <!-- Embedded font licenses
 Assistant
 Copyright 2020 The Assistant Project Authors (https://github.com/hafontia/Assistant).
@@ -743,7 +779,7 @@ render();
 <script src="sync.js?v=20261022em1"></script>
 <script src="content.js?v=20261028palette2"></script>
 <script src="board.js?v=20261027multi1"></script>
-<script src="notebooks.js?v=20261028swipe2"></script>
+<script src="notebooks.js?v=20261028full1"></script>
 <script src="exams.js?v=20261024cal1"></script>
 <script src="friends.js?v=20261028design1"></script>
 <script src="calendar.js?v=20261024gc2"></script>
@@ -751,4 +787,4 @@ render();
 <script src="push.js?v=20261023em2"></script>
 <script src="i18n.js?v=20261028design1"></script>
 <script src="chat.js?v=20261027chat1"></script></body>
-</html>
+  </html>
