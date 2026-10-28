@@ -6,8 +6,8 @@
   const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const avatar=p=>`<span class="fr-avatar" aria-hidden="true">${e(Array.from(p.first||'?')[0])}</span>`;
   const person=p=>`${avatar(p)}<span class="fr-person-text">${who(p)}</span>`;
-  const who=p=>`<bdi data-fr-content class="summary-name">${e(p.first)} ${e(p.last)}</bdi> <span class="fr-tag" dir="ltr">#${e(p.tag)}</span>`;
-  let me=null, meLoaded=false, activePane='mine';
+  const who=p=>`<bdi data-fr-content class="summary-name">${e(p.first)} ${e(p.last)}</bdi>${canSeeFriendCodes&&p.tag?` <span class="fr-tag" dir="ltr">#${e(p.tag)}</span>`:''}`;
+  let me=null, meLoaded=false, canSeeFriendCodes=false, activePane='mine';
   const tr=(he,en)=>en;
   const symbol=(name)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">${name==='plus'?'<path d="M12 5v14M5 12h14"/>':'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>'}</svg>`;
   function friendsStyle(){
@@ -42,11 +42,11 @@
     }
     root._englishObserver=new MutationObserver(()=>walk(root));root._englishObserver.observe(root,{childList:true,subtree:true,characterData:true});walk(root);
   }
-  async function loadMe(){try{const j=await api('/friends/me',{});me=j.profile;meLoaded=true;window.friendsPending=j.pending||{incoming:0,itemRequests:0};}catch(err){me=null;meLoaded=false;}badge();return me;}
+  async function loadMe(){canSeeFriendCodes=false;try{const st=await api('/owner/status',{});canSeeFriendCodes=st.owner===true;}catch(_){}try{const j=await api('/friends/me',{});me=j.profile;meLoaded=true;window.friendsPending=j.pending||{incoming:0,itemRequests:0};}catch(err){me=null;meLoaded=false;}badge();return me;}
   function badge(){const t=document.querySelector('#tabs .tab[data-tab="friends"]');if(!t)return;const n=(window.friendsPending&&(window.friendsPending.incoming+window.friendsPending.itemRequests))||0;t.classList.toggle('has-badge',n>0);}
   function errText(err){return err.message==='blocked'?'הפרופיל הושבת על ידי מנהלת האפליקציה.':err.status===429?'יותר מדי ניסיונות. נסי שוב בעוד כמה דקות.':err.status===404||err.message==='Failed to fetch'?'השרת לא זמין כרגע.':'לא הצליח. נסי שוב.';}
-  const NOTE='השם נבחר על ידי המשתמשת ואינו מאומת. הקוד אחרי # הוא מזהה ציבורי, אפשר להשוות אותו מחוץ לאפליקציה כדי לוודא שזה האדם הנכון.';
-  const SETTINGS_NOTE='רק שם וקוד ציבורי נחשפים בחיפוש. אחרי שחבר מאשר, הוא יכול לראות רק שמות של מחברות וסיכומים, לא תוכן. תוכן עובר רק אחרי אישור על כל פריט, והעותק נשאר אצל מי שקיבלה גם אם מסירים חבר.';
+  const NOTE='השם נבחר על ידי המשתמשת ואינו מאומת. קודים של משתמשים אחרים גלויים למנהלת האפליקציה בלבד.';
+  const SETTINGS_NOTE='רק שם נחשף בחיפוש. קודים גלויים למנהלת האפליקציה בלבד. אחרי שחבר מאשר, הוא יכול לראות רק שמות של מחברות וסיכומים, לא תוכן. תוכן עובר רק אחרי אישור על כל פריט, והעותק נשאר אצל מי שקיבלה גם אם מסירים חבר.';
 
   // ----- Settings -----
   window.renderFriendsSettings=async()=>{
@@ -62,7 +62,7 @@
       <label>שם משפחה<input name="last" required minlength="2" maxlength="30" value="${e(m?m.last:'')}" autocomplete="off"></label>
       <label class="exam-check"><input type="checkbox" name="disc" ${m&&m.discoverable?'checked':''}> אפשר לאחרים למצוא אותי לפי שם מלא</label>
       ${m?`<label class="exam-check"><input type="checkbox" id="fr-findable" ${m.findable?'checked':''}> אפשר לאחרים למצוא אותי לפי תחילת השם ולהציע אותי כחברה משותפת</label><p class="save-state">יוצגו רק שם פרטי ואות ראשונה של שם המשפחה. כבוי כברירת מחדל, אפשר לכבות בכל רגע.</p>`:''}
-      <p class="save-state">${m?`הקוד הציבורי שלך: <strong dir="ltr">#${e(m.tag)}</strong>. `:''}${NOTE}</p>
+      <p class="save-state">${m&&m.tag?`הקוד שלך: <strong dir="ltr">#${e(m.tag)}</strong>. `:''}${NOTE}</p>
       <button class="file-button">${m?'שמירה':'שמירת פרופיל'}</button>
       ${m?'<button class="file-button danger" type="button" id="fr-leave">הסרת הפרופיל החברתי</button>':''}
       <div class="form-error" id="fr-profile-msg"></div></form>`;
@@ -108,7 +108,7 @@
   // ----- Friends page -----
   window.renderFriends=async()=>{
     const root=document.getElementById('friends-workspace');if(!root)return;friendsStyle();englishPage(root);
-    const m=location.hash.match(/^#\/friends\/([A-Z2-9]{12})$/);
+    const m=location.hash.match(/^#\/friends\/([A-Z2-9]{12}|p_[A-Za-z0-9_-]{54})$/);
     root.innerHTML='<header class="file-header"><h1 class="file-title">חברים</h1></header><p class="save-state">טוען…</p>';
     await loadMe();
     if(!meLoaded){root.innerHTML='<header class="file-header"><h1 class="file-title">חברים</h1></header><p class="save-state">השרת לא זמין כרגע.</p>';return;}
@@ -167,7 +167,7 @@
     });
     root.querySelector('#fr-add-shortcut').onclick=()=>showPane('discover',true);
     root.querySelector('#fr-empty-add')?.addEventListener('click',()=>showPane('discover',true));
-    root.querySelector('#fr-filter').oninput=ev=>{const q=ev.target.value.trim().toLocaleLowerCase();let count=0;root.querySelectorAll('#fr-my-list .fr-friend').forEach((row,i)=>{const p=j.friends[i];const match=`${p.first} ${p.last} ${p.tag}`.toLocaleLowerCase().includes(q);row.hidden=!match;if(match)count++;});root.querySelector('#fr-filter-empty').hidden=!q||count>0||!j.friends.length;};
+    root.querySelector('#fr-filter').oninput=ev=>{const q=ev.target.value.trim().toLocaleLowerCase();let count=0;root.querySelectorAll('#fr-my-list .fr-friend').forEach((row,i)=>{const p=j.friends[i];const match=`${p.first} ${p.last} ${canSeeFriendCodes?p.tag||'':''}`.toLocaleLowerCase().includes(q);row.hidden=!match;if(match)count++;});root.querySelector('#fr-filter-empty').hidden=!q||count>0||!j.friends.length;};
     paintAdd(root.querySelector('#friends-add-page'));paintSuggestions(root.querySelector('#friends-sugg'));showPane(activePane);
     const msg=t=>{root.querySelector('#fr-msg').textContent=t;};
     root.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',async()=>{b.disabled=true;try{await api('/friends/respond',{fid:b.dataset.fid,action:b.dataset.act});renderFriends();}catch(err){msg(errText(err));b.disabled=false;}}));
@@ -180,7 +180,7 @@
     let lst={myRequests:[]};try{lst=await api('/friends/list',{});}catch(_){}
     const stOf=(kind,title)=>{const g=lst.myRequests.find(g=>g.who&&g.who.fid===fid&&g.kind===kind&&g.title===title&&(g.status==='pending'||g.status==='approved'));return g?g.status:'';};
     const rows=(arr,kind)=>arr.length?arr.map(x=>{const st=stOf(kind,x.title);if(st)return `<div class="fr-row"><span class="fr-name"><bdi data-fr-content class="summary-name">${e(x.title)}</bdi></span>${st==='approved'?'<a class="fr-link" href="#/friends">אושר, להוספה</a>':'<span class="save-state">ממתין לאישור</span>'}</div>`;return `<div class="fr-row"><span class="fr-name"><bdi data-fr-content class="summary-name">${e(x.title)}</bdi></span><button class="file-button" data-variant="secondary" type="button" data-ask="${kind}" data-ref="${e(x.ref)}">בקשת גישה</button></div>`;}).join(''):'<p class="save-state">אין עדיין.</p>';
-    root.innerHTML=`<header class="file-header"><a class="fr-back" href="#/friends">חזרה לחברים</a><h1 class="file-title summary-name" data-fr-content dir="auto">${e(f.first)} ${e(f.last)}</h1><div class="file-fact" dir="ltr">#${e(f.tag)}</div></header>
+    root.innerHTML=`<header class="file-header"><a class="fr-back" href="#/friends">חזרה לחברים</a><h1 class="file-title summary-name" data-fr-content dir="auto">${e(f.first)} ${e(f.last)}</h1>${canSeeFriendCodes&&f.tag?`<div class="file-fact" dir="ltr">#${e(f.tag)}</div>`:''}</header>
       
       <section class="group"><h2 class="group-label">מחברות</h2>${rows(j.notebooks,'notebook')}</section>
       <section class="group"><h2 class="group-label">סיכומים</h2>${rows(j.summaries,'summary')}</section>
