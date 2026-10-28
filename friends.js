@@ -36,7 +36,7 @@
     function text(value){let out=window.scI18n?.translate(value)||value;for(const [he,en] of custom)out=out.split(he).join(en);return out;}
     function walk(node){
       if(node.nodeType===3){const value=text(node.nodeValue);if(value!==node.nodeValue)node.nodeValue=value;return;}
-      if(node.nodeType!==1||node.matches('[data-fr-content],.fr-avatar,.fr-tag,script,style'))return;
+      if(node.nodeType!==1||node.matches('[data-fr-content],.fr-avatar,.fr-tag,[data-language-fixed],script,style'))return;
       for(const attr of ['placeholder','aria-label','title']){const value=node.getAttribute(attr);if(value){const en=text(value);if(en!==value)node.setAttribute(attr,en);}}
       for(const child of node.childNodes)walk(child);
     }
@@ -109,11 +109,11 @@
   window.renderFriends=async()=>{
     const root=document.getElementById('friends-workspace');if(!root)return;friendsStyle();englishPage(root);
     const m=location.hash.match(/^#\/friends\/([A-Z2-9]{12}|p_[A-Za-z0-9_-]{54})$/);
-    root.innerHTML='<header class="file-header"><h1 class="file-title">חברים</h1></header><p class="save-state">טוען…</p>';
+    root.innerHTML='<header class="file-header"><h1 class="file-title" data-language-fixed="he" dir="rtl" lang="he">חברים</h1></header><p class="save-state">טוען…</p>';
     await loadMe();
-    if(!meLoaded){root.innerHTML='<header class="file-header"><h1 class="file-title">חברים</h1></header><p class="save-state">השרת לא זמין כרגע.</p>';return;}
-    if(!me){root.innerHTML='<header class="file-header"><h1 class="file-title">חברים</h1></header><div class="group"><p class="save-state">כדי להשתמש בחברים צריך לשמור שם פרטי ושם משפחה. רק את בוחרת אם אחרים יוכלו למצוא אותך.</p><a class="file-button" href="#/settings">להגדרות</a></div>';return;}
-    try{ if(m)await friendPage(root,m[1]); else await listPage(root); }catch(err){root.innerHTML=`<header class="file-header"><h1 class="file-title">חברים</h1></header><p class="form-error">${errText(err)}</p>`;}
+    if(!meLoaded){root.innerHTML='<header class="file-header"><h1 class="file-title" data-language-fixed="he" dir="rtl" lang="he">חברים</h1></header><p class="save-state">השרת לא זמין כרגע.</p>';return;}
+    if(!me){root.innerHTML='<header class="file-header"><h1 class="file-title" data-language-fixed="he" dir="rtl" lang="he">חברים</h1></header><div class="group"><p class="save-state">כדי להשתמש בחברים צריך לשמור שם פרטי ושם משפחה. רק את בוחרת אם אחרים יוכלו למצוא אותך.</p><a class="file-button" href="#/settings">להגדרות</a></div>';return;}
+    try{ if(m)await friendPage(root,m[1]); else await listPage(root); }catch(err){root.innerHTML=`<header class="file-header"><h1 class="file-title" data-language-fixed="he" dir="rtl" lang="he">חברים</h1></header><p class="form-error">${errText(err)}</p>`;}
     window.friendsPending=window.friendsPending||{};badge();
   };
   async function listPage(root){
@@ -132,7 +132,7 @@
     const blocked=j.blocked.map(p=>`<div class="fr-row"><span class="fr-name">${who(p)}</span><button class="fr-link" type="button" data-act="unblock" data-fid="${e(p.fid)}">ביטול חסימה</button></div>`).join('');
     const pending=j.incoming.length+j.itemRequests.filter(x=>x.status==='pending').length+j.myRequests.filter(x=>x.status==='approved').length;
     root.innerHTML=`<div class="fr-social">
-      <header class="file-header fr-social-header"><h1 class="file-title">חברים</h1><button class="fr-add-circle" id="fr-add-shortcut" aria-label="${tr('הוספת חברים','Add friends')}">${symbol('plus')}</button></header>
+      <header class="file-header fr-social-header"><h1 class="file-title" data-language-fixed="he" dir="rtl" lang="he">חברים</h1><button class="fr-add-circle" id="fr-add-shortcut" aria-label="${tr('הוספת חברים','Add friends')}">${symbol('plus')}</button></header>
       <label class="fr-search-wrap" id="fr-mine-search">${symbol('search')}<input id="fr-filter" aria-label="${tr('חיפוש בחברים שלי','Search my friends')}" placeholder="${tr('חיפוש בחברים שלי','Search my friends')}" autocomplete="off"></label>
       <div class="fr-subtabs" role="tablist" aria-label="${tr('חברים','Friends')}">
         <button class="fr-subtab" role="tab" id="fr-tab-mine" aria-controls="fr-pane-mine" data-pane="mine">החברים שלי</button>
