@@ -13,7 +13,7 @@
  const inkIndex=async nb=>{const r=await inkGet('nbidx:'+nb);return r&&Array.isArray(r.pages)?r.pages:[];};
  const inkHasLegacy=async()=>{try{const d=await inkGet('doc');return !!(d&&((d.items&&d.items.length)||(d.more&&d.more.some(m=>m&&m.length))));}catch(e){return false;}};
  const inkNewId=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
- const INKBOOKV='20261029book1';
+ const INKBOOKV='20261029layout2';
  const inkSha=async t=>{try{return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(t))))].slice(0,5).map(b=>b.toString(16).padStart(2,'0')).join('');}catch(e){let h=5381;for(const c of String(t))h=((h<<5)+h+c.charCodeAt(0))>>>0;return 'x'+h.toString(16);}};
  const loadInkBook=async()=>{if(window.InkBook)return;if(!document.querySelector('link[data-inkbook]')){const lk=document.createElement('link');lk.rel='stylesheet';lk.href='inkbook-fonts.css?v='+INKBOOKV;lk.setAttribute('data-inkbook','1');document.head.appendChild(lk);}if(!window.__INKBOOK_PAPER)await new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='inkbook-paper.js?v='+INKBOOKV;sc.onload=res;sc.onerror=()=>rej(Error('paper'));document.head.appendChild(sc);});await import('./inkbook.js?v='+INKBOOKV);if(!window.InkBook)throw Error('missing');};
  const ovKey=(nb,pid,h)=>'nb:'+nb+':ov:'+pid+':'+h;
@@ -139,6 +139,8 @@
     onBack:()=>{location.hash='#/notebooks';},
     load:key=>inkLoadItems(meta,key),
     save:(key,items)=>inkSaveItems(n,meta,key,items),
+    loadColor:async key=>{const m=meta[key];if(!m)throw Error('unknown page');const identity=m.kind==='text'?'nb:'+n.id+':text:'+m.sid:key;const saved=await inkGet('papercolor:v1:'+identity);return saved&&['#fffdfb','#fff4d6','#fce4ec','#e1efff','#e2f4e9','#eee6fa'].includes(saved.color)?saved.color:'#fffdfb';},
+    saveColor:async(key,color)=>{const m=meta[key];if(!m||!['#fffdfb','#fff4d6','#fce4ec','#e1efff','#e2f4e9','#eee6fa'].includes(color))throw Error('invalid color');const identity=m.kind==='text'?'nb:'+n.id+':text:'+m.sid:key;await inkPut('papercolor:v1:'+identity,{version:1,color,savedAt:Date.now()});},
     addInk:async afterKey=>{const idx=await inkIndex(n.id);if(idx.length>=30)throw Error('יש כבר 30 דפי כתב יד במחברת הזו.');const m=meta[afterKey]||{};let anchor='',at=idx.length;if(m.kind==='text'){anchor=m.sid||'';const f=idx.findIndex(x=>anchor&&x.after===anchor);if(f>=0)at=f;}else if(m.kind==='ink'){anchor=m.ip.after||'';const f=idx.findIndex(x=>x.id===m.ip.id);at=f>=0?f+1:idx.length;}
      const id=inkNewId(),entry={id,title:'כתב יד '+(idx.length+1),createdAt:Date.now()};if(anchor)entry.after=anchor;const next=[...idx.slice(0,at),entry,...idx.slice(at)];await inkPut('nbidx:'+n.id,{version:1,pages:next});
      const nb2=await inkBuildList(n);Object.keys(meta).forEach(k=>delete meta[k]);Object.assign(meta,nb2.meta);const key='nb:'+n.id+':'+id;const index=nb2.pages.findIndex(p=>p.key===key);nbStart[n.id]=key;return {page:nb2.pages[index],index};},
