@@ -13,7 +13,7 @@
  const inkIndex=async nb=>{const r=await inkGet('nbidx:'+nb);return r&&Array.isArray(r.pages)?r.pages:[];};
  const inkHasLegacy=async()=>{try{const d=await inkGet('doc');return !!(d&&((d.items&&d.items.length)||(d.more&&d.more.some(m=>m&&m.length))));}catch(e){return false;}};
  const inkNewId=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
- const INKBOOKV='20261030bright1';
+ const INKBOOKV='20261030del1';
  const inkSha=async t=>{try{return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(t))))].slice(0,5).map(b=>b.toString(16).padStart(2,'0')).join('');}catch(e){let h=5381;for(const c of String(t))h=((h<<5)+h+c.charCodeAt(0))>>>0;return 'x'+h.toString(16);}};
  const loadInkBook=async()=>{if(window.InkBook)return;if(!document.querySelector('link[data-inkbook]')){const lk=document.createElement('link');lk.rel='stylesheet';lk.href='inkbook-fonts.css?v='+INKBOOKV;lk.setAttribute('data-inkbook','1');document.head.appendChild(lk);}if(!window.__INKBOOK_PAPER)await new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='inkbook-paper.js?v='+INKBOOKV;sc.onload=res;sc.onerror=()=>rej(Error('paper'));document.head.appendChild(sc);});await import('./inkbook.js?v='+INKBOOKV);if(!window.InkBook)throw Error('missing');};
  const ovKey=(nb,pid,h)=>'nb:'+nb+':ov:'+pid+':'+h;
