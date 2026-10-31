@@ -10,10 +10,11 @@
  const inkDb=async()=>{const name=await inkName();return new Promise((res,rej)=>{const r=indexedDB.open(name,1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});};
  const inkGet=async k=>{const d=await inkDb();return new Promise((res,rej)=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>{d.close();res(q.result);};q.onerror=()=>{d.close();rej(q.error);};});};
  const inkPut=async(k,v)=>{const d=await inkDb();return new Promise((res,rej)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>{d.close();res();};t.onerror=()=>{d.close();rej(t.error);};t.onabort=()=>{d.close();rej(t.error);};});};
+ const inkDel=async k=>{const d=await inkDb();return new Promise((res,rej)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').delete(k);t.oncomplete=()=>{d.close();res();};t.onerror=()=>{d.close();rej(t.error);};t.onabort=()=>{d.close();rej(t.error);};});};
  const inkIndex=async nb=>{const r=await inkGet('nbidx:'+nb);return r&&Array.isArray(r.pages)?r.pages:[];};
  const inkHasLegacy=async()=>{try{const d=await inkGet('doc');return !!(d&&((d.items&&d.items.length)||(d.more&&d.more.some(m=>m&&m.length))));}catch(e){return false;}};
  const inkNewId=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
- const INKBOOKV='20261030school2';
+ const INKBOOKV='20261031page2';
  const inkSha=async t=>{try{return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(t))))].slice(0,5).map(b=>b.toString(16).padStart(2,'0')).join('');}catch(e){let h=5381;for(const c of String(t))h=((h<<5)+h+c.charCodeAt(0))>>>0;return 'x'+h.toString(16);}};
  const loadInkBook=async()=>{if(window.InkBook)return;if(!document.querySelector('link[data-inkbook]')){const lk=document.createElement('link');lk.rel='stylesheet';lk.href='inkbook-fonts.css?v='+INKBOOKV;lk.setAttribute('data-inkbook','1');document.head.appendChild(lk);}if(!window.__INKBOOK_PAPER)await new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='inkbook-paper.js?v='+INKBOOKV;sc.onload=res;sc.onerror=()=>rej(Error('paper'));document.head.appendChild(sc);});await import('./inkbook.js?v='+INKBOOKV);if(!window.InkBook)throw Error('missing');};
  const ovKey=(nb,pid,h)=>'nb:'+nb+':ov:'+pid+':'+h;
@@ -34,6 +35,44 @@
  async function inkLoadItems(meta,key){const m=meta[key];if(!m)return null;if(m.kind==='text'){const r=await inkGet(key);return r&&Array.isArray(r.items)?r.items:[];}const [base,sub]=key.split('#');const r=await inkGet(base);if(!r)return [];return sub?(r.more&&r.more[Number(sub)-1])||[]:(r.items||[]);}
  const inkUrl=(nb,pg)=>{try{sessionStorage.setItem('sc-ink-last',nb+':'+pg);}catch(e){}return 'ink.html?v='+INKV+'&nb='+encodeURIComponent(nb)+'&pg='+encodeURIComponent(pg);};
  async function inkAddPage(nb,copyFromLegacy){const pages=await inkIndex(nb);if(pages.length>=30)throw Error('יש כבר 30 דפי כתב יד במחברת הזו.');const id=inkNewId();if(copyFromLegacy){const d=await inkGet('doc');if(!d)throw Error('לא נמצא כתב יד שמור.');await inkPut('nb:'+nb+':'+id,{...d,savedAt:Date.now()});}const next=[...pages,{id,title:'כתב יד '+(pages.length+1),createdAt:Date.now()}];await inkPut('nbidx:'+nb,{version:1,pages:next});return id;}
+ async function inkDeletePage(n,meta,key){
+  const m=meta[key];if(!m)throw Error('הדף לא נמצא.');
+  if(m.kind==='text'){
+   if(!m.sid||m.old)throw Error('אי אפשר למחוק את הדף הזה כאן.');
+   await checked(n,'delete-page',{pageId:m.sid});
+   return;
+  }
+  const [base,sub]=key.split('#');
+  let rec=null;try{rec=await inkGet(base);}catch(e){}
+  rec=rec&&typeof rec==='object'?rec:{version:2,items:[],more:[]};
+  let items=Array.isArray(rec.items)?rec.items:[];
+  let more=Array.isArray(rec.more)?[...rec.more]:[];
+  const origM=more.length;
+  const colors=[];
+  for(let k=0;k<=origM;k++){try{colors.push(await inkGet('papercolor:v1:'+base+(k?'#'+k:'')));}catch(e){colors.push(null);}}
+  const shiftColors=async()=>{for(let k=0;k<colors.length;k++){if(colors[k])await inkPut('papercolor:v1:'+base+(k?'#'+k:''),colors[k]);}};
+  if(!sub){
+   if(!more.length){
+    const idx=await inkIndex(n.id);
+    await inkPut('nbidx:'+n.id,{version:1,pages:idx.filter(x=>x.id!==m.ip.id)});
+    try{await inkDel(base);}catch(e){}
+    return;
+   }
+   items=more[0];more=more.slice(1);colors.shift();
+  }else{
+   const k=Number(sub);
+   if(!(k>=1&&k<=origM))throw Error('הדף לא נמצא.');
+   more.splice(k-1,1);colors.splice(k,1);
+   if(!items.length&&!more.length){
+    const idx=await inkIndex(n.id);
+    await inkPut('nbidx:'+n.id,{version:1,pages:idx.filter(x=>x.id!==m.ip.id)});
+    try{await inkDel(base);}catch(e){}
+    return;
+   }
+  }
+  await inkPut(base,{...rec,version:2,items,more,savedAt:Date.now()});
+  await shiftColors();
+ }
 
  function status(text){const el=document.querySelector('#nb-editor #nb-status,#nb-create #nb-status')||document.getElementById('nb-status');if(el)el.textContent=text;}
  async function mutate(body){if(working)throw Error('busy');working=true;try{return await window.notebookMutation(body);}catch(e){if(e.message==='conflict'){await window.loadUserContent();throw Error('המחברת השתנתה במכשיר אחר. פתחי אותה שוב לפני שמירה.');}throw Error(e.message==='content too large'?'האחסון בפרופיל מלא. קצרי טקסט או מחקי דפים שאינם נחוצים.':'לא נשמר. נסי שוב.');}finally{working=false;}}
@@ -139,6 +178,12 @@
    await loadInkBook();
    const built=await inkBuildList(n),meta=built.meta;
    let start=0;try{const k=nbStart[n.id];const i=built.pages.findIndex(p=>p.key===k);if(i>=0)start=i;}catch(e){}
+   const confirmPageDelete=page=>{const m=meta[page.key];if(!m)return;window.boardDraftOpen=true;
+    editor.innerHTML=`<section class="photo-panel"><h2>מחיקת דף</h2><p>למחוק את "${E(page.title)}"? ${m.kind==='ink'?'הכתיבה של הדף נמחקת מהמכשיר הזה. ':''}לא ניתן לשחזר.</p><div class="photo-actions"><button class="file-button danger" id="nb-confirm">מחיקה לצמיתות</button><button class="file-button" id="nb-cancel">ביטול</button></div><p id="nb-status" role="status"></p></section>`;
+    editor.scrollIntoView({behavior:'smooth'});
+    editor.querySelector('#nb-cancel').onclick=()=>{window.boardDraftOpen=false;render();};
+    editor.querySelector('#nb-confirm').onclick=async ev=>{ev.target.disabled=true;try{const fresh=await inkBuildList(n),fi=fresh.pages.findIndex(p=>p.key===page.key),nb2=fresh.pages[fi+1]||fresh.pages[fi-1];await inkDeletePage(n,meta,page.key);nbStart[n.id]=nb2?nb2.key:'';window.boardDraftOpen=false;render();}catch(err){status(err.message||'לא נמחק. נסי שוב.');ev.target.disabled=false;}};
+   };
    const host={title:n.title,pages:built.pages,start,
     onBack:()=>{location.hash='#/notebooks';},
     load:key=>inkLoadItems(meta,key),
@@ -152,6 +197,7 @@
      if(isText){items.push({id:'edit',label:'עריכת הדף',icon:'text',run:hid('[data-edit="'+page.sid+'"]')});}
      items.push({id:'newtext',label:'דף טקסט חדש',icon:'text',run:hid('#nb-write')},{id:'photo',label:'צילום דף',icon:'image',run:hid('#nb-photo')},{id:'sum',label:'הוספת סיכום',icon:'note',run:hid('#nb-add-summary')},{id:'addpdf',label:'הוספת PDF',icon:'up',run:hid('#nb-add-pdf')},{id:'pdf',label:'PDF למחברת',icon:'dl',run:hid('#nb-pdf')});
      if(isText){const up=box.querySelector('[data-up="'+page.sid+'"]'),dn=box.querySelector('[data-down="'+page.sid+'"]');if(up&&!up.disabled)items.push({id:'mvup',label:'הזזת הדף אחורה במחברת',icon:'up',run:hid('[data-up="'+page.sid+'"]')});if(dn&&!dn.disabled)items.push({id:'mvdn',label:'הזזת הדף קדימה במחברת',icon:'dl',run:hid('[data-down="'+page.sid+'"]')});}
+     if(page&&(page.kind==='ink'||page.kind==='text'&&!page.old&&page.sid))items.push({id:'delsep',label:'',sep:true},{id:'delpage',label:'מחיקת הדף',icon:'trash',danger:true,run:()=>confirmPageDelete(page)});
      if(legacyHas)items.push({id:'imp',label:'הוספת הכתיבה השמורה (ללא מחברת) כדף כאן',icon:'pen',run:async()=>{await inkAddPage(n.id,true);render();}});
      return items;},
     details:'הכתיבה נשמרת אוטומטית בדפדפן של המכשיר הזה בלבד. היא לא מסונכרנת למכשיר אחר ולא נשמרת בענן, ועלולה להימחק אם מנקים את נתוני האתר או מסירים את האפליקציה. הורידי גיבוי מדי פעם.'};
