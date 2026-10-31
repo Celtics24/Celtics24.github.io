@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>דף ניסיון - זום ודפדוף</title>
+<link rel="stylesheet" href="inkbook-fonts.css?v=20261031page2">
+<style>
+  body{margin:0;background:#fbf8f6;font-family:Assistant,Felix007,sans-serif;color:#30232b}
+  .trial-note{max-width:640px;margin:0 auto;padding:10px 14px;font-size:14px;color:#6b5f65;text-align:center}
+  #editor{padding:0 14px}
+  .photo-panel{display:grid;gap:12px;padding:16px;border:1px solid #e3c3cf;background:#fdf3f6;border-radius:18px;margin-bottom:20px;max-width:640px}
+  .photo-panel h2{margin:0;font-size:22px;font-weight:700;color:#30232b}
+  .photo-panel p{margin:0;font-size:17px;line-height:1.5;color:#30232b}
+  .photo-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .file-button{min-height:48px;text-align:center;border-radius:11px;font-weight:500;font-family:inherit;font-size:16px;padding:0 14px;border:1px solid #d8c5ce;background:#fffdfb;color:#30232b;cursor:pointer}
+  .file-button.danger{color:#b22636;border-color:#e1a6ae;background:#fff5f5}
+</style>
+</head>
+<body>
+<p class="trial-note">דף ניסיון בלבד לבדיקת זום ודפדוף, עם תוכן לדוגמה. אין גישה למחברות שלך ושום דבר לא נשמר בענן.</p>
+<div id="ui"></div>
+<div id="editor"></div>
+<script src="inkbook-paper.js?v=20261031page2"></script>
+<script type="module">
+window.__INK_DB = "ink-trial-b9";
+window.__INK_KEY = "trial-doc";
+const E = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+await import("./inkbook-trial.js?v=20261031trial1");
+const ui = document.getElementById("ui");
+const ed = document.getElementById("editor");
+const store = {
+  p1: [
+    { id: "demo1", t: "stroke", hl: false, color: "#242124", width: 3, pen: "fountain", dash: "solid", pts: [[120, 260], [150, 300], [200, 280], [260, 330], [320, 300], [360, 340]] },
+    { id: "demo2", t: "stroke", hl: false, color: "#632739", width: 2.4, pen: "fountain", dash: "solid", pts: [[130, 420], [190, 400], [250, 440], [310, 415]] },
+    { id: "demo3", t: "sticker", kind: "anat-heart", x: 430, y: 300, s: 110 },
+    { id: "demo4", t: "sticker", kind: "anat-brain", x: 30, y: 520, s: 90 },
+    { id: "demo5", t: "sticker", kind: "anat-lungs", x: 600, y: 520, s: 90 },
+  ],
+  p2: [],
+};
+const colors = {};
+const pages = [
+  { key: "p1", kind: "ink", title: "כתב יד 1" },
+  { key: "p2", kind: "text", title: "דף טקסט לדוגמה", sid: "demo-text-1", text: "זהו דף טקסט לדוגמה במחברת התצוגה. אפשר למחוק אותו מהתפריט ⋯ כדי לראות את זרימת המחיקה החדשה." },
+];
+let un;
+const confirmPageDelete = (page) => {
+  window.boardDraftOpen = true;
+  ed.innerHTML = `<section class="photo-panel"><h2>מחיקת דף</h2><p>למחוק את "${E(page.title)}"? ${page.kind === "ink" ? "הכתיבה של הדף נמחקת מהמכשיר הזה. " : ""}לא ניתן לשחזר.</p><div class="photo-actions"><button class="file-button danger" id="nb-confirm">מחיקה לצמיתות</button><button class="file-button" id="nb-cancel">ביטול</button></div><p id="nb-status" role="status"></p></section>`;
+  ed.scrollIntoView({ behavior: "smooth" });
+  ed.querySelector("#nb-cancel").addEventListener("click", () => { ed.innerHTML = ""; window.boardDraftOpen = false; });
+  ed.querySelector("#nb-confirm").addEventListener("click", () => {
+    const i = pages.findIndex((p) => p.key === page.key);
+    if (i >= 0) pages.splice(i, 1);
+    ed.innerHTML = ""; window.boardDraftOpen = false;
+    host.pages = pages.slice();
+    un = window.InkBook.mount(ui, host);
+  });
+};
+const host = {
+  title: "מחברת לדוגמה",
+  pages,
+  start: 0,
+  onBack: () => {},
+  load: async (key) => store[key] ?? [],
+  save: async (key, items) => { store[key] = items; },
+  loadColor: async (key) => colors[key] || "#fffdfb",
+  saveColor: async (key, color) => { colors[key] = color; },
+  addInk: async () => {
+    const key = "p" + (pages.length + 1);
+    pages.push({ key, kind: "ink", title: "כתב יד " + pages.length });
+    store[key] = [];
+    return { page: pages[pages.length - 1], index: pages.length - 1 };
+  },
+  menu: (page) => {
+    const items = [];
+    const isText = page && page.kind === "text" && !page.old && page.sid;
+    if (isText) items.push({ id: "edit", label: "עריכת הדף", icon: "text", run: () => {} });
+    items.push(
+      { id: "newtext", label: "דף טקסט חדש", icon: "text", run: () => {} },
+      { id: "photo", label: "צילום דף", icon: "image", run: () => {} },
+      { id: "sum", label: "הוספת סיכום", icon: "note", run: () => {} },
+      { id: "addpdf", label: "הוספת PDF", icon: "up", run: () => {} },
+      { id: "pdf", label: "PDF למחברת", icon: "dl", run: () => {} },
+    );
+    if (page && (page.kind === "ink" || (page.kind === "text" && !page.old && page.sid)))
+      items.push({ id: "delsep", label: "", sep: true }, { id: "delpage", label: "מחיקת הדף", icon: "trash", danger: true, run: () => confirmPageDelete(page) });
+    return items;
+  },
+  details: "זהו דף ניסיון. התוכן כאן הוא לדוגמה בלבד.",
+};
+un = window.InkBook.mount(ui, host);
+const sync = () => { ui.style.display = ed.childElementCount > 0 ? "none" : ""; };
+new MutationObserver(sync).observe(ed, { childList: true });
+</script>
+</body>
+</html>
