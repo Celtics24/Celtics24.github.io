@@ -171,7 +171,7 @@ function wirePageTurn() {
   }
   function playTurn(old, forward) {
     if (!$(".sheet")) return;
-    const clear = (a, parts) => { const t = setTimeout(() => a.finish(), 1000); a.finished.catch(() => {}).finally(() => { clearTimeout(t); parts.forEach((x) => x.remove()); }); };
+    const clear = (a, parts) => { const t = setTimeout(() => a.finish(), window.__PT_CLEAR || 1000); a.finished.catch(() => {}).finally(() => { clearTimeout(t); parts.forEach((x) => x.remove()); }); };
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       sr.append(old);
       clear(old.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: "ease-out", fill: "both" }), [old]);
@@ -182,7 +182,7 @@ function wirePageTurn() {
     cast.style.cssText = flat.style.cssText;
     sr.append(...(forward ? [cast, root] : [old, cast, root]));
     const wide = innerWidth - parseFloat(flat.style.left) - W > 40, end = wide ? 270 : 110;
-    const opts = { duration: wide ? 520 : 340, easing: "cubic-bezier(.4,.05,.6,.95)", fill: "both", direction: forward ? "normal" : "reverse" };
+    const opts = { duration: window.__PT_DURATION || (wide ? 520 : 340), easing: "cubic-bezier(.4,.05,.6,.95)", fill: "both", direction: forward ? "normal" : "reverse" };
     const step = (t) => BEND * Math.sin(Math.PI * t) / strips.length, track = (f) => Array.from({ length: 13 }, (_, i) => f(i / 12));
     strips.forEach(({ strip, shade }, k) => {
       if (k) strip.animate(track((t) => ({ transform: `rotateY(${step(t)}deg)` })), opts);
