@@ -112,6 +112,22 @@ button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
 :root[data-style=glass] .tab.is-active .tab-ico{stroke:var(--ds-page)}
 :root[data-style=glass] .file-button.pri{color:var(--ds-page)}
 :root[data-style=glass] .pal.on{box-shadow:var(--glass-sh),0 0 0 2px var(--pink-700)}
+/* ערכה כהה: הדגש לבן חלש יותר ורכיבים שנשארים כהים, לשמירת ניגודיות */
+:root[data-theme=dark][data-style=glass]{
+  --glass-hi:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.05));
+  --glass-hi-deep:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.06) 60%);
+  --glass-rim:linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35));
+  --glass-sh:inset 0 1px 0 rgba(255,255,255,.3),0 0 0 1px rgba(255,255,255,.07),0 8px 20px -10px rgba(0,0,0,.6);
+}
+:root[data-theme=dark][data-style=glass] .file-button,
+:root[data-theme=dark][data-style=glass] .next-exam,
+:root[data-theme=dark][data-style=glass] .streak-card,
+:root[data-theme=dark][data-style=glass] .chat-home,
+:root[data-theme=dark][data-style=glass] .notebook-hero{--g:color-mix(in srgb,var(--pink-100) 62%,transparent)}
+:root[data-theme=dark][data-style=glass] .file-button[data-variant="secondary"],
+:root[data-theme=dark][data-style=glass] .last-nb,
+:root[data-theme=dark][data-style=glass] .tabs-inner,
+:root[data-theme=dark][data-style=glass] .pal{--g:color-mix(in srgb,var(--ds-white) 72%,transparent)}
 /* נגישות: שקיפות מופחתת — רכיבים אטומים */
 @media (prefers-reduced-transparency:reduce){
   :root[data-style=glass] .file-button,:root[data-style=glass] .next-exam,:root[data-style=glass] .streak-card,:root[data-style=glass] .last-nb,:root[data-style=glass] .chat-home,:root[data-style=glass] .notebook-hero,:root[data-style=glass] .tabs-inner,:root[data-style=glass] .pal{-webkit-backdrop-filter:none;backdrop-filter:none}
