@@ -202,7 +202,7 @@
      return items;},
     details:'הכתיבה נשמרת אוטומטית בדפדפן של המכשיר הזה בלבד. היא לא מסונכרנת למכשיר אחר ולא נשמרת בענן, ועלולה להימחק אם מנקים את נתוני האתר או מסירים את האפליקציה. הורידי גיבוי מדי פעם.'};
    let legacyHas=false;try{legacyHas=await inkHasLegacy();}catch(e){}
-   ui.innerHTML='';const un=window.InkBook.mount(ui,host);window.__inkUnmount=un;
+   ui.innerHTML='';const un=window.InkBook.mount(ui,host);window.__inkUnmount=un;if(window.wirePageTurn)try{window.wirePageTurn(ui);}catch(e){}
    const sync=()=>{const open=editor.childElementCount>0;ui.style.display=open?'none':'';};
    new MutationObserver(sync).observe(editor,{childList:true});sync();
   }catch(e){showStage('כתב היד לא נטען, מוצגת תצוגת המחברת הרגילה.');}})();
