@@ -611,7 +611,7 @@ function examLinksHtml(ex){
   return `<span class="exam-links-row">${list.map(s=>`<a class="exam-chip" href="${s.type==='text'?'#/text/'+s.id:s.url}" ${s.type==='text'?'':'target="_blank" rel="noreferrer"'}>${s.name}</a>`).join('')}</span>`;
 }
 function examBoardHtml(){
-  const sorted=exams.map((ex,i)=>({ex,i})).sort((a,b)=>new Date(a.ex.y,a.ex.m-1,a.ex.d)-new Date(b.ex.y,b.ex.m-1,b.ex.d));
+  const sorted=exams.map((ex,i)=>({ex,i})).filter(({ex})=>daysUntil(ex)>=0).sort((a,b)=>new Date(a.ex.y,a.ex.m-1,a.ex.d)-new Date(b.ex.y,b.ex.m-1,b.ex.d));
   return `<div class="exams">${sorted.map(({ex,i})=>{
     const chipStyle=ex.color?`background:${ex.color.bg};color:${ex.color.accent}`:'';
     const inner=`<span class="exam-date" style="${chipStyle}"><strong>${ex.d}</strong><span>${hebMonths[ex.m-1]}${ex.far?` ${ex.y}`:''}</span></span>
